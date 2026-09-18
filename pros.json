@@ -1,0 +1,7 @@
+{
+  "pros": [
+    { "label": "Kanavi",  "name": "vinaka",       "tag": "KR1", "region": "kr",  "role": "JUNGLE" },
+    { "label": "Canyon",  "name": "JUGKlNG",      "tag": "kr",  "region": "kr",  "role": "JUNGLE" },
+    { "label": "Sheiden", "name": "LFT Sheiden",  "tag": "PHL1","region": "ph2", "role": "JUNGLE" }
+  ]
+}

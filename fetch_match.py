@@ -14,6 +14,7 @@ import json
 import os
 import sys
 import time
+from urllib.parse import quote
 
 import requests
 
@@ -49,7 +50,8 @@ class Riot:
         if "#" in name:
             name, tag = name.split("#", 1)
         p = self._get(
-            self.platform_host, f"/riot/account/v1/accounts/by-riot-id/{name}/{tag}"
+            self.platform_host,
+            f"/riot/account/v1/accounts/by-riot-id/{quote(name)}/{quote(tag)}",
         )
         return p["puuid"]
 

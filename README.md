@@ -36,6 +36,8 @@ python fetch_match.py --name YourSummoner --tag NA1 --region na1 --count 5
 - [ ] **Leak detection** — aggregate many of *your* games to surface recurring mistakes
   (overstaying on unspent gold, death timing/location clusters, CS deficits, vision gaps,
   missed objectives). Produces a longitudinal "leak profile" per player.
-- [ ] **Pro VOD analysis** — ingest a corpus of pro matches, extract per-player metrics
-  (CS/min, gold@10, recall/roam timing, objective participation, death avoidance), and
-  compare players to surface the strategies + metrics that actually correlate with winning.
+- [ ] **Pro solo-queue benchmarking** — pull games from a `pros.json` roster of pro junglers
+  (Kanavi, Canyon, Sheiden, …), compute the same metrics, and diff against your own.
+- [ ] **Champion-focus layer** — normalize by champion (and later archetype), so benchmarks
+  compare *your Graves* vs. *pro Graves*, not Graves vs. Sejuani. Metrics like clear speed,
+  economy, and gank frequency are playstyle-dependent and must be champion-aware.
