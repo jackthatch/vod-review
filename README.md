@@ -33,3 +33,9 @@ python fetch_match.py --name YourSummoner --tag NA1 --region na1 --count 5
 - [x] Fetch matches + timeline, condense into structured JSON
 - [ ] LLM grounding layer — turn the JSON into a coaching review (lane phase, trading, mid/late game)
 - [ ] Output formats (CLI text → web UI / markdown report)
+- [ ] **Leak detection** — aggregate many of *your* games to surface recurring mistakes
+  (overstaying on unspent gold, death timing/location clusters, CS deficits, vision gaps,
+  missed objectives). Produces a longitudinal "leak profile" per player.
+- [ ] **Pro VOD analysis** — ingest a corpus of pro matches, extract per-player metrics
+  (CS/min, gold@10, recall/roam timing, objective participation, death avoidance), and
+  compare players to surface the strategies + metrics that actually correlate with winning.
