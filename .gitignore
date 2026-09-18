@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Fetched data (regenerate with fetch_match.py)
+data/
+
+# Env / secrets
+.env
