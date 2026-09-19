@@ -40,6 +40,40 @@ def _avg(vals):
     return round(sum(vals) / len(vals), 2) if vals else None
 
 
+def _snap_at(snapshots, minute):
+    """Last snapshot at or before `minute`; None if none exists."""
+    best = None
+    for s in snapshots:
+        if s["min"] <= minute:
+            best = s
+        else:
+            break
+    return best
+
+
+def _level_time(matches, target_level):
+    """Average minute at which the player first reaches `target_level`."""
+    times = []
+    for m in matches:
+        for s in m["snapshots"]:
+            if s["level"] >= target_level:
+                times.append(s["min"])
+                break
+    return _avg(times)
+
+
+def _item_spikes(snapshots, threshold=25):
+    """Detect item purchases as attack-damage jumps >= threshold between
+    adjacent snapshots (ignores small drift from buffs/level-ups)."""
+    spikes = []
+    for i in range(1, len(snapshots)):
+        prev = snapshots[i - 1].get("attack_damage")
+        cur = snapshots[i].get("attack_damage")
+        if prev is not None and cur is not None and (cur - prev) >= threshold:
+            spikes.append({"min": snapshots[i]["min"], "ad": cur, "delta": cur - prev})
+    return spikes
+
+
 def analyze(matches, overstay_gold):
     n = len(matches)
     if n == 0:
@@ -51,6 +85,34 @@ def analyze(matches, overstay_gold):
     cs_min = [m["stats"]["total_cs"] / m["duration_min"] for m in matches]
     deaths_pg = [m["stats"]["deaths"] for m in matches]
     kp = [m["stats"]["kills"] + m["stats"]["assists"] for m in matches]
+
+    # --- new snapshot-derived metrics ---
+    gpm = [m["stats"]["gold"] / m["duration_min"] for m in matches]
+    level_6 = _level_time(matches, 6)
+    level_11 = _level_time(matches, 11)
+
+    # AD at fixed minutes (item-spike / power-spike benchmark)
+    ad10 = [(_snap_at(m["snapshots"], 10) or {}).get("attack_damage") for m in matches]
+    ad20 = [(_snap_at(m["snapshots"], 20) or {}).get("attack_damage") for m in matches]
+
+    # farming-vs-fighting split: final champ-damage / total-damage ratio
+    fight_ratios = []
+    dmg_taken = []
+    for m in matches:
+        if not m["snapshots"]:
+            continue
+        last = m["snapshots"][-1]
+        td = last.get("total_damage")
+        dc = last.get("damage_to_champions")
+        if td and dc is not None:
+            fight_ratios.append(dc / td)
+        if last.get("damage_taken") is not None:
+            dmg_taken.append(last["damage_taken"] / m["duration_min"])
+
+    # item purchase timings
+    spikes = []
+    for m in matches:
+        spikes.extend(_item_spikes(m["snapshots"]))
 
     # death timing + overstay
     buckets = Counter()
@@ -96,6 +158,14 @@ def analyze(matches, overstay_gold):
         "winrate": round(100 * wins / n, 1),
         "first_clear_avg_min": _avg(first_clears),
         "cs_per_min": _avg(cs_min),
+        "gold_per_min": _avg(gpm),
+        "level_6_min": level_6,
+        "level_11_min": level_11,
+        "ad_at_10min": _avg(ad10),
+        "ad_at_20min": _avg(ad20),
+        "fight_ratio_pct": round(100 * _avg(fight_ratios), 1) if fight_ratios else None,
+        "damage_taken_per_min": _avg(dmg_taken),
+        "item_spikes": spikes,
         "deaths_per_game": _avg(deaths_pg),
         "kp_avg": _avg(kp),
         "death_timing": dict(buckets),
@@ -120,8 +190,24 @@ def report(r, champion):
     fc = r["first_clear_avg_min"]
     lines.append(f"  First clear (6 camps): {fc}m avg" if fc else "  First clear: n/a")
     lines.append(f"  CS/min:                {r['cs_per_min']}")
+    lines.append(f"  Gold/min:              {r['gold_per_min']}")
     lines.append(f"  Deaths/game:           {r['deaths_per_game']}")
     lines.append(f"  Kill participation:    {r['kp_avg']} (kills+assists)/game")
+
+    lines.append("")
+    lines.append("  Power spikes:")
+    lines.append(f"    Level 6 (avg):       {r['level_6_min']} min")
+    lines.append(f"    Level 11 (avg):      {r['level_11_min']} min")
+    lines.append(f"    AD @ 10min (avg):    {r['ad_at_10min']}")
+    lines.append(f"    AD @ 20min (avg):    {r['ad_at_20min']}")
+    lines.append(f"    Item purchases:      {len(r['item_spikes'])} detected "
+                 f"({_avg([s['delta'] for s in r['item_spikes']]) or 0} avg AD jump)")
+
+    lines.append("")
+    lines.append(f"  Farming-vs-fighting:   {r['fight_ratio_pct']}% of dmg to champions"
+                 if r["fight_ratio_pct"] is not None else
+                 "  Farming-vs-fighting:   n/a")
+    lines.append(f"  Damage taken/min:      {r['damage_taken_per_min']}")
 
     lines.append("")
     lines.append("  Death timing distribution:")
