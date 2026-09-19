@@ -31,6 +31,10 @@ REGION_ROUTING = {
 class Riot:
     def __init__(self, api_key, region):
         self.key = api_key
+        self.set_region(region)
+
+    def set_region(self, region):
+        """Reconfigure routing for a platform region (e.g. 'na1', 'kr')."""
         self.platform = region
         self.region = REGION_ROUTING.get(region, region)
         self.platform_host = f"https://{self.platform}.api.riotgames.com"

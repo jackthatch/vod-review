@@ -8,7 +8,9 @@ overstaying, objective control). Benchmark against pro solo-queue junglers.
 ## Structure
 
 - **Python backend** (repo root) — `fetch_match.py` (pull matches), `trends.py`
-  (aggregate leak profile), `moments.py` (flag pivotal moments).
+  (aggregate leak profile), `moments.py` (flag pivotal moments), `benchmark.py`
+  (diff vs pro junglers), `poll_bot.py` + `supabase_client.py` (cloud subscription
+  bot that writes processed matches into Supabase).
 - **Web app** (`web/`) — Next.js + TypeScript frontend on Supabase, deploys to
   Vercel. User accounts, saved preferences, and match results. See
   [`web/README.md`](web/README.md).
