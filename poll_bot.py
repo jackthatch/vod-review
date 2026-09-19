@@ -23,9 +23,13 @@ import argparse
 import os
 import sys
 
+from dotenv import load_dotenv
+
 import moments
 from fetch_match import Riot, condense
 from supabase_client import SupabaseStore
+
+load_dotenv()
 
 
 def kda_str(match):
