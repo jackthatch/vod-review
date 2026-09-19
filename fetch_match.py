@@ -69,8 +69,13 @@ class Riot:
 
 
 def _opponent(match, me):
+    # Prefer teamPosition (accurate); lane is unreliable for jungle/role.
+    def _pos(p):
+        return p.get("teamPosition") or p.get("individualPosition") or p.get("lane")
+
+    my_pos = _pos(me)
     for p in match["info"]["participants"]:
-        if p["teamId"] != me["teamId"] and p.get("lane") == me.get("lane"):
+        if p["teamId"] != me["teamId"] and _pos(p) == my_pos:
             return p["championName"]
     return "?"
 
@@ -163,7 +168,7 @@ def condense(match, timeline, puuid):
     return {
         "match_id": match["metadata"]["matchId"],
         "champion": me["championName"],
-        "role": me.get("role", "?"),
+        "role": me.get("teamPosition") or me.get("individualPosition") or me.get("role") or "?",
         "participant_id": my_id,
         "team_id": my_team,
         "win": me["win"],
