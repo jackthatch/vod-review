@@ -109,13 +109,21 @@ def condense(match, timeline, puuid):
         pf = f["participantFrames"].get(str(my_id))
         if not pf:
             continue
+        ds = pf.get("damageStats", {})
+        cs = pf.get("championStats", {})
         snapshots.append({
             "min": round(i * fi / 60000, 1),
             "level": pf["level"],
+            "xp": pf.get("xp"),
             "total_gold": pf["totalGold"],
             "current_gold": pf["currentGold"],  # gold in pocket (unspent)
+            "gold_per_second": pf.get("goldPerSecond"),
             "cs": pf["minionsKilled"] + pf["jungleMinionsKilled"],
             "jungle_cs": pf["jungleMinionsKilled"],
+            "total_damage": ds.get("totalDamageDone"),
+            "damage_to_champions": ds.get("totalDamageDoneToChampions"),
+            "damage_taken": ds.get("totalDamageTaken"),
+            "attack_damage": cs.get("attackDamage"),
             "x": pf["position"]["x"],
             "y": pf["position"]["y"],
         })
