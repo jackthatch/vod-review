@@ -82,14 +82,87 @@ are pre-computed and passed in as context.
 
 ---
 
+## Architecture decision: cloud-first, local companion later
+
+**Decision (2026-09):** ship the cloud service first, add a local companion app only
+after the cloud product is proven.
+
+### Why cloud-first
+
+Match history is **public data** — anyone with a Riot API key can fetch any
+player's matches from their Riot ID (`name#tag` → puuid → match list → timeline).
+No OAuth, no RSO login, no local agent, no key-sharing with the player. The
+existing `fetch_match.py` + `trends.py` pipeline already runs headless on a server,
+so the "cloud reviews your games" model is the *same code we already have* pointed
+at more accounts.
+
+### The hard boundary: text vs. video
+
+| Layer | Where it runs | Why |
+|---|---|---|
+| Analysis + highlights (the writeup) | ☁️ Cloud | MATCH-V5 is public, cloud-friendly |
+| Auto-generated video clips | 💻 Local only | Replay API (`127.0.0.1:2999`) requires the *player's own* game client running a replay |
+
+A cloud computer cannot run someone's replay and record clips — the Replay API is
+localhost-only. So **text/data highlights are cloud; video clips are a local
+companion feature for later.**
+
+### Cloud subscription model
+
+Players subscribe and provide their Riot ID. A cloud bot:
+
+1. **Polls** each subscriber's match history on a cadence (see "no webhook" below).
+2. Diffs new matches against what it has already processed.
+3. Runs `condense` + `trends` + moment-detection.
+4. Produces a **session summary** of findings, delivered at the end of each play
+   session (Discord/DM/email/dashboard).
+
+### "No webhook" constraint (must design around)
+
+The Tournament API has server callbacks, but only for tournament-code games. For
+normal solo-queue there is **no "game finished" push**. The bot must **poll**.
+Implications:
+
+- "End of session" = "next poll after their last game" — inherent few-minute latency.
+- A session "ended" vs. "paused" is indistinguishable; key off "no new games for N
+  minutes."
+- Polling many subscribers × rate limits is the scaling constraint. Dev key (20
+  req/s, 100 req/2min) is fine for a handful of beta users; a production key
+  (one per product, higher limits) is required at scale, with match-ID caching.
+
+### Riot ToS constraints
+
+- Free tier required if monetized.
+- No betting/gambling.
+- No MMR/ELO calculators ("ranked-ladder replacement" is off-limits; "jungle leak
+  profile" is fine).
+
+### Local companion app (later phase)
+
+Once the cloud findings are well-fleshed-out, a local companion can:
+- Auto-record clips of flagged moments via the Replay API (`EnableReplayApi=1`).
+- Guide/instruct the user through the findings interactively.
+- Provide the richer live data (`wardScore`, exact `playeritems`, full event stream)
+  that the Live Client Data API exposes but the remote MATCH-V5 API doesn't.
+
+The cloud bot is a strict superset of the personal-use tool; the local companion is
+a *different* runtime (needs the game client), so it's deferred deliberately.
+
+---
+
 ## Open questions to resolve later
 
 - **Smite/objective presence** — can we tell from `x/y` position + objective event
-  whether the player was *in range* of the objective? (needs map geometry)
+  whether the player was *in range* of the objective? Data Dragon's `map11.png`
+  minimap + snapshot `x/y` makes this mappable (unlike pure timeline data).
 - **50/50 classification** — how do we label a fight as "statistically correct to
   take" vs "bad decision"? Needs win-probability or expected-value model.
-- **Vision** — Riot timeline has no ward/vision data. Is "no vision on their TP
-  flank" inferable from anything, or is that out of scope?
+- **Vision** — MATCH-V5 timeline has no ward data, BUT the Live Client Data API
+  exposes `wardScore` and trinket `playeritems` during live games. Post-game vision
+  analysis is limited; live/replay vision is possible via the local client.
+- **Item detection** — MATCH-V5 has no item-purchase events, so we infer from AD
+  jumps (current heuristic). The Live Client Data API exposes exact `playeritems`
+  + `ItemPurchased` events, and Data Dragon `item.json` maps IDs to names.
 - **Micro vs macro** — cleanly separating "you clicked wrong" (micro) from "you
   chose wrong" (macro) from "nothing you could do" (variance) is the hard part.
   Probably needs the LLM layer, not pure heuristics.

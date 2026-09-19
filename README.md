@@ -96,10 +96,12 @@ Each `data/<match_id>.json` contains:
 - [x] Leak detection (`trends.py`) — first-clear speed, death patterns, overstaying, objective control
 - [x] Champion filter (`--champion`) — basic champion normalization
 - [x] Power-spike + economy metrics — level timing, AD@10/20min, gold/min, farming-vs-fighting ratio, item-spike detection, damage taken/min
+- [ ] Cloud subscription bot — poll subscribers' matches, diff new games, deliver session summaries
 - [ ] Pro solo-queue benchmarking — diff your profile against the `pros.json` roster
 - [ ] Champion archetype layer (farming-carry vs. utility vs. gank junglers)
 - [ ] Moment detection — flag pivotal in-game moments (lost objectives, overstays, spike gaps)
 - [ ] LLM grounding layer — turn the JSON into a natural-language coaching review
 - [ ] Output formats (markdown report / web UI)
+- [ ] Local companion app (later) — Replay API clip recording + live data guidance
 
 See [`VISION.md`](VISION.md) for the long-term direction ("speedrun VOD review").
