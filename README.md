@@ -5,6 +5,14 @@ Riot API, reconstruct a structured "story" of each game, and aggregate it into a
 **leak profile** of your recurring mistakes (first-clear speed, death patterns,
 overstaying, objective control). Benchmark against pro solo-queue junglers.
 
+## Structure
+
+- **Python backend** (repo root) — `fetch_match.py` (pull matches), `trends.py`
+  (aggregate leak profile), `moments.py` (flag pivotal moments).
+- **Web app** (`web/`) — Next.js + TypeScript frontend on Supabase, deploys to
+  Vercel. User accounts, saved preferences, and match results. See
+  [`web/README.md`](web/README.md).
+
 ## Setup
 
 1. Get a **Development API key** at https://developer.riotgames.com (free, works immediately for personal use).
