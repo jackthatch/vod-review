@@ -1,31 +1,40 @@
 // Central, loud failure for missing Supabase env vars.
 //
-// Next.js inlines NEXT_PUBLIC_* vars at BUILD time. If either is missing,
-// @supabase/ssr throws a generic "URL and API key are required" error from
-// deep in the stack. This helper throws instead, naming the exact variable
-// (and whether it was unset vs. empty) so a failed build is self-diagnosing.
-
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (value === undefined) {
-    throw new Error(
-      `Missing environment variable "${name}". ` +
-        `Set it in Vercel → Project → Settings → Environment Variables, ` +
-        `and make sure the "Production" scope is checked. Then redeploy.`,
-    );
-  }
-  if (value.trim() === "") {
-    throw new Error(
-      `Environment variable "${name}" is set but empty. ` +
-        `Check Vercel → Settings → Environment Variables for a blank value.`,
-    );
-  }
-  return value;
-}
+// Next.js inlines NEXT_PUBLIC_* vars at BUILD time — but ONLY when they are
+// referenced statically (e.g. `process.env.NEXT_PUBLIC_SUPABASE_URL`). A dynamic
+// lookup like `process.env[name]` is NOT inlined and returns `undefined` at
+// runtime in the Edge middleware and browser bundle. So every reference here is
+// written out explicitly.
 
 export function getSupabaseEnv() {
-  return {
-    url: requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
-    anonKey: requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
-  };
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (url === undefined) {
+    throw new Error(
+      'Missing environment variable "NEXT_PUBLIC_SUPABASE_URL". ' +
+        "Set it in Vercel → Project → Settings → Environment Variables, " +
+        'and make sure the "Production" scope is checked. Then redeploy.',
+    );
+  }
+  if (url.trim() === "") {
+    throw new Error(
+      'Environment variable "NEXT_PUBLIC_SUPABASE_URL" is set but empty.',
+    );
+  }
+
+  if (anonKey === undefined) {
+    throw new Error(
+      'Missing environment variable "NEXT_PUBLIC_SUPABASE_ANON_KEY". ' +
+        "Set it in Vercel → Project → Settings → Environment Variables, " +
+        'and make sure the "Production" scope is checked. Then redeploy.',
+    );
+  }
+  if (anonKey.trim() === "") {
+    throw new Error(
+      'Environment variable "NEXT_PUBLIC_SUPABASE_ANON_KEY" is set but empty.',
+    );
+  }
+
+  return { url, anonKey };
 }
