@@ -48,7 +48,7 @@ class Riot:
         if "#" in name:
             name, tag = name.split("#", 1)
         p = self._get(
-            self.platform_host,
+            self.region_host,
             f"/riot/account/v1/accounts/by-riot-id/{quote(name)}/{quote(tag)}",
         )
         return p["puuid"]
@@ -116,7 +116,15 @@ def condense(match, timeline, puuid):
         })
 
     deaths, kills, objectives = [], [], []
-    for ev in timeline["info"]["events"]:
+
+    # Events may be top-level (older API) or embedded per-frame (current API).
+    events = timeline["info"].get("events")
+    if events is None:
+        events = []
+        for f in frames:
+            events.extend(f.get("events", []))
+
+    for ev in events:
         t = ev["timestamp"] / 60000.0  # minutes
         et = ev["type"]
         if et == "CHAMPION_KILL":
@@ -186,6 +194,14 @@ def main():
     args = ap.parse_args()
 
     key = os.environ.get("RIOT_API_KEY")
+    if not key:
+        # fall back to loading .env from the script directory
+        try:
+            from dotenv import load_dotenv
+            load_dotenv()
+            key = os.environ.get("RIOT_API_KEY")
+        except ImportError:
+            pass
     if not key:
         sys.exit("Set RIOT_API_KEY env var first (developer.riotgames.com)")
 
