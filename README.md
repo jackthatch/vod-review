@@ -47,6 +47,24 @@ Reported metrics: first-clear speed (time to 6 camps), CS/min, deaths/game, kill
 participation, death-timing distribution, overstay rate, and objective control
 (dragon/herald/baron secured by your team vs. by your smite).
 
+## Pivotal moments (`moments.py`)
+
+Flag the moments in a *single* game that likely decided it, ranked by impact:
+
+```bash
+python moments.py data/NA1_1234567890.json
+python moments.py data/NA1_1234567890.json --json --top 5
+```
+
+- `--overstay-gold` — unspent-gold threshold for an "overstay death" (default `1000`).
+- `--range` — distance (map units) to count as "contesting" an objective (default `3000`).
+- `--window` — seconds around an objective to count as a "fight" (default `30`).
+- `--gap-min` — min minutes between item completions to flag a spike gap (default `6.0`).
+
+Detectors: overstay deaths, contested objectives (enemy secured it while you were in
+range), deaths at objectives, and power-spike gaps. This is the deterministic layer
+that feeds the coaching/LLM layer — see `VISION.md`.
+
 ## Pro benchmark roster (`pros.json`)
 
 Fetch pro junglers' solo-queue games with the same script (they're on the live servers):
@@ -96,10 +114,10 @@ Each `data/<match_id>.json` contains:
 - [x] Leak detection (`trends.py`) — first-clear speed, death patterns, overstaying, objective control
 - [x] Champion filter (`--champion`) — basic champion normalization
 - [x] Power-spike + economy metrics — level timing, AD@10/20min, gold/min, farming-vs-fighting ratio, item-spike detection, damage taken/min
+- [x] Moment detection (`moments.py`) — overstays, contested objectives, deaths at objectives, spike gaps
 - [ ] Cloud subscription bot — poll subscribers' matches, diff new games, deliver session summaries
 - [ ] Pro solo-queue benchmarking — diff your profile against the `pros.json` roster
 - [ ] Champion archetype layer (farming-carry vs. utility vs. gank junglers)
-- [ ] Moment detection — flag pivotal in-game moments (lost objectives, overstays, spike gaps)
 - [ ] LLM grounding layer — turn the JSON into a natural-language coaching review
 - [ ] Output formats (markdown report / web UI)
 - [ ] Local companion app (later) — Replay API clip recording + live data guidance

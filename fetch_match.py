@@ -156,12 +156,14 @@ def condense(match, timeline, puuid):
                     "x": pos.get("x"), "y": pos.get("y"),
                 })
         elif et == "ELITE_MONSTER_KILL":
+            pos = ev.get("position", {})
             objectives.append({
                 "min": round(t, 1),
                 "type": ev.get("monsterType"),
                 "sub": ev.get("monsterSubType"),
                 "team": ev.get("killerTeamId"),
                 "mine": ev.get("killerId") == my_id,
+                "x": pos.get("x"), "y": pos.get("y"),
             })
 
     # first full clear: first frame where I've taken 6 jungle camps
