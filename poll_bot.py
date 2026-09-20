@@ -49,6 +49,7 @@ def match_payload(story):
         "kda": kda_str(story),
         "moments": ms,  # jsonb — list of ranked moment dicts
         "summary": None,  # LLM narrative comes later
+        "detail": story.get("detail"),  # jsonb — items, roster, cs/gold, queue
     }
 
 

@@ -32,10 +32,10 @@
   --border: #e0e1e6; /* Border Lavender — cards */
   --border-input: #d9d9e0; /* Input Border — interactive */
 
-  /* Semantic (LoL-specific) */
-  --win: #1a7f37;
-  --win-bg: #eaf6ee;
-  --loss: #cf222e;
+  /* Semantic (LoL-specific, op.gg style: blue = win, red = loss) */
+  --win: #2f6fed;
+  --win-bg: #e8f0fe;
+  --loss: #d64550;
   --loss-bg: #fdecec;
 
   /* Radius scale */
@@ -76,8 +76,8 @@
   --border: #2a2a2f;
   --border-input: #33333a;
 
-  --win: #4cc97a;
-  --win-bg: #14301f;
+  --win: #7aa5f5;
+  --win-bg: #1a2a44;
   --loss: #ff7a7a;
   --loss-bg: #3a1518;
 
@@ -351,41 +351,253 @@ h3 {
   z-index: 20;
 }
 
-/* ── Match list ──────────────────────────────────────────── */
+/* ── Match list (op.gg style) ────────────────────────────── */
 
-.match-row {
+.match-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .match-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.match-list {
+  display: grid;
+  gap: 10px;
+}
+
+.match-card {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
+  gap: 14px;
+  width: 100%;
+  padding: 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
-  transition: box-shadow 0.15s ease, transform 0.05s ease, background 0.2s ease;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  overflow: hidden;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease, background 0.2s ease;
 }
-.match-row:hover {
+.match-card:hover {
   box-shadow: var(--shadow-whisper);
 }
-.match-row + .match-row {
-  margin-top: 10px;
+.match-card--selected {
+  border-color: var(--link);
+  box-shadow: 0 0 0 2px rgba(13, 116, 206, 0.15);
 }
-.match-champ {
-  font-weight: 600;
+
+/* left win/loss strip */
+.match-card__result {
+  align-self: stretch;
+  width: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+.match-card--win .match-card__result {
+  background: var(--win);
+}
+.match-card--loss .match-card__result {
+  background: var(--loss);
+}
+
+.match-card__body {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  padding: 10px 0;
+}
+
+.match-card__top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.match-card__champ {
+  font-weight: 700;
   font-size: 16px;
   color: var(--black);
-  min-width: 120px;
 }
-.match-meta {
+.match-card__queue {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.match-card__kda {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.match-card__kda .k {
+  color: var(--text);
+}
+.match-card__kda .d {
+  color: var(--loss);
+}
+.match-card__kda .a {
   color: var(--text-secondary);
-  font-size: 14px;
+}
+.match-card__kda .sep {
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+.match-card__ratio {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-left: 4px;
+}
+
+.match-card__meta {
   display: flex;
   gap: 12px;
-  flex: 1;
+  font-size: 12px;
+  color: var(--text-secondary);
 }
-.match-kda {
-  font-family: var(--font-mono);
-  font-size: 14px;
+
+.match-card__items {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding-right: 4px;
+}
+
+.match-card__right {
+  display: grid;
+  gap: 4px;
+  justify-items: end;
+  padding: 10px 16px 10px 0;
+}
+.match-card__duration {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.match-card__verdict {
+  font-size: 12px;
+  font-weight: 600;
+}
+.match-card--win .match-card__verdict {
+  color: var(--win);
+}
+.match-card--loss .match-card__verdict {
+  color: var(--loss);
+}
+
+/* champion icon */
+.champ-icon {
+  position: relative;
+  flex-shrink: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--border);
+}
+.champ-icon img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+.champ-icon__level {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 3px 0 0 0;
+}
+
+/* item icon */
+.item-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: var(--border);
+  display: block;
+}
+.item-icon--trinket {
+  margin-left: 4px;
+  opacity: 0.85;
+}
+
+/* ── Participants sidebar ────────────────────────────────── */
+
+.participants {
+  position: sticky;
+  top: 76px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-whisper);
+  display: grid;
+  gap: 14px;
+}
+.participants__empty {
+  font-size: 13px;
+}
+.participants__team {
+  display: grid;
+  gap: 6px;
+}
+.team-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+}
+.team-label--win {
+  color: var(--win);
+}
+.team-label--loss {
+  color: var(--loss);
+}
+.participant-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.participant-row--me {
+  background: var(--win-bg);
+  border-radius: 6px;
+  padding: 4px 6px;
+  margin: 0 -6px;
+}
+.participant-row__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--text);
+}
+.participant-row--me .participant-row__name {
+  font-weight: 600;
+  color: var(--win);
+}
+.participant-row__kda {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .empty-state {

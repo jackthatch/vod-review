@@ -25,6 +25,36 @@ export type Moment = {
   [key: string]: unknown;
 };
 
+export type Participant = {
+  participant_id: number;
+  champion: string;
+  team: number;
+  role: string;
+  kills: number;
+  deaths: number;
+  assists: number;
+  level: number | null;
+  gold: number;
+  cs: number;
+  is_me: boolean;
+  summoner: string | null;
+};
+
+export type MatchDetail = {
+  level: number | null;
+  kills: number;
+  deaths: number;
+  assists: number;
+  cs: number;
+  gold: number;
+  items: number[];
+  trinket: number | null;
+  game_mode: string | null;
+  queue: string | null;
+  multi_kills: string[];
+  participants: Participant[];
+};
+
 export type Match = {
   id: string;
   champion: string;
@@ -34,5 +64,6 @@ export type Match = {
   kda: string;
   moments: Moment[] | null;
   summary: string | null;
+  detail: MatchDetail | null;
   fetched_at: string;
 };

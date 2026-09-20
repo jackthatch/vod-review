@@ -27,6 +27,19 @@ REGION_ROUTING = {
     "sg2": "sea", "tw2": "sea", "vn2": "sea", "ph2": "sea",
 }
 
+# queueId -> human name (the common ones; falls back to "Queue N" otherwise)
+QUEUE_NAMES = {
+    400: "Normal Draft",
+    420: "Ranked Solo/Duo",
+    430: "Normal Blind",
+    440: "Ranked Flex",
+    450: "ARAM",
+    700: "Clash",
+    900: "ARURF",
+    1020: "One For All",
+    1700: "Arena",
+}
+
 
 class Riot:
     def __init__(self, api_key, region):
@@ -93,6 +106,60 @@ def _gold_at(snapshots, t_min):
         else:
             break
     return best
+
+
+def match_detail(match, me_id):
+    """Extract the display detail for a match: items, full participant roster,
+    CS/gold/level, queue name and multi-kills. Feeds the op.gg-style UI."""
+    info = match["info"]
+    me = next(p for p in info["participants"] if p["participantId"] == me_id)
+
+    main_items = [me.get(f"item{i}") for i in range(6)]  # items 0..5
+    main_items = [i for i in main_items if i]
+    trinket = me.get("item6")
+
+    participants = []
+    for p in info["participants"]:
+        participants.append({
+            "participant_id": p["participantId"],
+            "champion": p["championName"],
+            "team": p["teamId"],
+            "role": p.get("teamPosition") or p.get("individualPosition") or "?",
+            "kills": p.get("kills", 0),
+            "deaths": p.get("deaths", 0),
+            "assists": p.get("assists", 0),
+            "level": p.get("champLevel"),
+            "gold": p.get("goldEarned", 0),
+            "cs": p.get("totalMinionsKilled", 0) + p.get("neutralMinionsKilled", 0),
+            "is_me": p["participantId"] == me_id,
+            "summoner": p.get("riotIdGameName") or p.get("summonerName"),
+        })
+
+    multi = []
+    if me.get("pentaKills"):
+        multi.append("penta")
+    if me.get("quadraKills"):
+        multi.append("quadra")
+    if me.get("tripleKills"):
+        multi.append("triple")
+    if me.get("doubleKills"):
+        multi.append("double")
+
+    qid = info.get("queueId")
+    return {
+        "level": me.get("champLevel"),
+        "kills": me.get("kills", 0),
+        "deaths": me.get("deaths", 0),
+        "assists": me.get("assists", 0),
+        "cs": me.get("totalMinionsKilled", 0) + me.get("neutralMinionsKilled", 0),
+        "gold": me.get("goldEarned", 0),
+        "items": main_items,
+        "trinket": trinket,
+        "game_mode": info.get("gameMode"),
+        "queue": QUEUE_NAMES.get(qid, f"Queue {qid}" if qid else None),
+        "multi_kills": multi,
+        "participants": participants,
+    }
 
 
 def condense(match, timeline, puuid):
@@ -200,6 +267,7 @@ def condense(match, timeline, puuid):
         "deaths": deaths,
         "kills": kills,
         "objectives": objectives,
+        "detail": match_detail(match, my_id),
     }
 
 
