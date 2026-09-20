@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { signInWithEmail } from "@/app/actions";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -27,6 +28,9 @@ export default function LoginPage() {
 
   return (
     <main className="auth-hero">
+      <div className="theme-toggle-float">
+        <ThemeToggle />
+      </div>
       <div className="auth-card">
         <h1 className="auth-title">vod-review</h1>
         <p className="auth-sub">

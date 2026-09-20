@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import RiotIdForm from "@/components/RiotIdForm";
 import MatchList from "@/components/MatchList";
 import LogoutButton from "@/components/LogoutButton";
+import ThemeToggle from "@/components/ThemeToggle";
 import type { Profile, Match } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -45,10 +46,11 @@ export default async function DashboardPage() {
           <a className="wordmark" href="/dashboard">
             vod-review
           </a>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <span className="muted" style={{ fontSize: 14 }}>
               {user.email}
             </span>
+            <ThemeToggle />
             <LogoutButton />
           </div>
         </div>

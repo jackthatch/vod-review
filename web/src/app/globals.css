@@ -1,20 +1,27 @@
 /* ─────────────────────────────────────────────────────────────
-   vod-review design system — Expo-style
-   Luminous cool-white canvas, monochrome + semantic accents,
-   pill geometry, whisper shadows, generous whitespace.
+   vod-review design system — Expo-style, light + dark
+   Luminous cool-white canvas (light) / deep charcoal (dark),
+   monochrome + semantic accents, pill geometry, whisper shadows.
    ───────────────────────────────────────────────────────────── */
 
 :root {
+  color-scheme: light;
+
   /* Surfaces */
   --bg: #f0f0f3; /* Cloud Gray — page background */
   --surface: #ffffff; /* Pure White — cards, elevated */
   --surface-dark: #171717; /* Banner Dark — high-contrast containers */
+  --nav-bg: rgba(240, 240, 243, 0.8);
 
   /* Text */
-  --black: #000000; /* Expo Black — headlines, primary CTA */
+  --black: #000000; /* Expo Black — headlines, brand */
   --text: #1c2024; /* Near Black — body */
   --text-secondary: #60646c; /* Slate Gray — secondary */
   --text-tertiary: #b0b4ba; /* Silver — metadata, placeholders */
+
+  /* CTA */
+  --cta-bg: #000000;
+  --cta-fg: #ffffff;
 
   /* Accents */
   --link: #0d74ce; /* Link Cobalt */
@@ -26,9 +33,9 @@
   --border-input: #d9d9e0; /* Input Border — interactive */
 
   /* Semantic (LoL-specific) */
-  --win: #1a7f37; /* muted green */
+  --win: #1a7f37;
   --win-bg: #eaf6ee;
-  --loss: #cf222e; /* muted red */
+  --loss: #cf222e;
   --loss-bg: #fdecec;
 
   /* Radius scale */
@@ -45,6 +52,37 @@
   /* Typography */
   --font: var(--font-inter), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   /* mono stack: next/font injects --font-mono directly (see .mono below) */
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #0e0e10;
+  --surface: #1a1a1d;
+  --surface-dark: #000000;
+  --nav-bg: rgba(14, 14, 16, 0.8);
+
+  --black: #ffffff;
+  --text: #ececf0;
+  --text-secondary: #a0a0a8;
+  --text-tertiary: #5f5f68;
+
+  --cta-bg: #ffffff;
+  --cta-fg: #000000;
+
+  --link: #5aa7f0;
+  --link-legal: #7c93ff;
+
+  --border: #2a2a2f;
+  --border-input: #33333a;
+
+  --win: #4cc97a;
+  --win-bg: #14301f;
+  --loss: #ff7a7a;
+  --loss-bg: #3a1518;
+
+  --shadow-whisper: 0 3px 8px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.35);
+  --shadow-elevated: 0 10px 24px rgba(0, 0, 0, 0.55), 0 3px 6px rgba(0, 0, 0, 0.4);
 }
 
 * {
@@ -68,6 +106,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   font-size: 16px;
   line-height: 1.4;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 a {
@@ -102,7 +141,8 @@ h3 {
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
-  transition: box-shadow 0.15s ease, transform 0.05s ease, background 0.15s ease;
+  transition: box-shadow 0.15s ease, transform 0.05s ease, background 0.15s ease,
+    color 0.15s ease;
 }
 .btn:hover {
   box-shadow: var(--shadow-whisper);
@@ -117,9 +157,9 @@ h3 {
 }
 
 .btn--dark {
-  background: var(--black);
-  color: #fff;
-  border-color: var(--black);
+  background: var(--cta-bg);
+  color: var(--cta-fg);
+  border-color: var(--cta-bg);
 }
 
 .btn--ghost {
@@ -133,6 +173,12 @@ h3 {
   color: var(--text);
 }
 
+.btn--icon {
+  padding: 10px;
+  width: 40px;
+  height: 40px;
+}
+
 /* ── Cards ───────────────────────────────────────────────── */
 
 .card {
@@ -141,6 +187,7 @@ h3 {
   border-radius: var(--r-lg);
   padding: 24px 28px;
   box-shadow: var(--shadow-whisper);
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 /* ── Inputs ──────────────────────────────────────────────── */
@@ -154,7 +201,8 @@ h3 {
   border: 1px solid var(--border-input);
   border-radius: var(--r-sm);
   padding: 12px 14px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.2s ease,
+    color 0.2s ease;
 }
 .input::placeholder {
   color: var(--text-tertiary);
@@ -206,7 +254,7 @@ h3 {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: rgba(240, 240, 243, 0.8);
+  background: var(--nav-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
@@ -278,6 +326,7 @@ h3 {
   box-shadow: var(--shadow-whisper);
   display: grid;
   gap: 8px;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 .auth-title {
   font-size: 40px;
@@ -293,6 +342,15 @@ h3 {
   margin: 0 0 20px;
 }
 
+/* ── Theme toggle (fixed top-right) ──────────────────────── */
+
+.theme-toggle-float {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 20;
+}
+
 /* ── Match list ──────────────────────────────────────────── */
 
 .match-row {
@@ -303,7 +361,7 @@ h3 {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
-  transition: box-shadow 0.15s ease, transform 0.05s ease;
+  transition: box-shadow 0.15s ease, transform 0.05s ease, background 0.2s ease;
 }
 .match-row:hover {
   box-shadow: var(--shadow-whisper);
