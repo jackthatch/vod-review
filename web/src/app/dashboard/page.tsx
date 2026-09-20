@@ -39,25 +39,25 @@ export default async function DashboardPage() {
   };
 
   return (
-    <main style={{ maxWidth: 900, margin: "0 auto", padding: "24px 20px" }}>
-      <header
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 24,
-        }}
-      >
-        <h1>vod-review</h1>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ opacity: 0.7 }}>{user.email}</span>
-          <LogoutButton />
+    <>
+      <nav className="nav">
+        <div className="nav__inner">
+          <a className="wordmark" href="/dashboard">
+            vod-review
+          </a>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <span className="muted" style={{ fontSize: 14 }}>
+              {user.email}
+            </span>
+            <LogoutButton />
+          </div>
         </div>
-      </header>
+      </nav>
 
-      <RiotIdForm profile={p} />
-
-      <MatchList matches={(matches as Match[] | null) ?? []} />
-    </main>
+      <main className="container">
+        <RiotIdForm profile={p} />
+        <MatchList matches={(matches as Match[] | null) ?? []} />
+      </main>
+    </>
   );
 }

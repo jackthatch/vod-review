@@ -18,32 +18,33 @@ export default function RiotIdForm({ profile }: { profile: Profile }) {
   }
 
   return (
-    <section
-      style={{
-        border: "1px solid #333",
-        borderRadius: 8,
-        padding: 16,
-        marginBottom: 24,
-      }}
-    >
-      <h2 style={{ fontSize: 18, marginBottom: 8 }}>Your Riot ID</h2>
-      <form onSubmit={onSubmit} style={{ display: "flex", gap: 8 }}>
+    <section className="card">
+      <h2 className="section-title" style={{ marginBottom: 12 }}>
+        Your Riot ID
+      </h2>
+      <p className="muted" style={{ fontSize: 14, marginBottom: 16 }}>
+        Link your League account so we can pull and analyze your match history.
+      </p>
+
+      <form onSubmit={onSubmit} style={{ display: "flex", gap: 10 }}>
         <input
           type="text"
+          className="input"
           placeholder="summoner#TAG"
           value={riotId}
           onChange={(e) => setRiotId(e.target.value)}
-          style={{ flex: 1, padding: 10, fontSize: 16, borderRadius: 6, border: "1px solid #444" }}
+          style={{ maxWidth: 360 }}
         />
-        <button
-          type="submit"
-          disabled={pending}
-          style={{ padding: "10px 16px", fontSize: 16, borderRadius: 6, cursor: "pointer" }}
-        >
+        <button type="submit" className="btn btn--dark" disabled={pending}>
           {pending ? "Saving…" : "Save"}
         </button>
       </form>
-      {message && <p style={{ marginTop: 8, opacity: 0.7 }}>{message}</p>}
+
+      {message && (
+        <p className="muted" style={{ marginTop: 12, fontSize: 13 }}>
+          {message}
+        </p>
+      )}
     </section>
   );
 }

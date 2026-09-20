@@ -26,39 +26,53 @@ export default function LoginPage() {
   }
 
   return (
-    <main style={{ maxWidth: 420, margin: "80px auto", padding: "0 20px" }}>
-      <h1>vod-review</h1>
-      <p style={{ color: "var(--foreground)", opacity: 0.7 }}>
-        Log in with your email — we&apos;ll send a magic link.
-      </p>
-
-      <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12, marginTop: 20 }}>
-        <input
-          type="email"
-          required
-          placeholder="you@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{ padding: 10, fontSize: 16, borderRadius: 6, border: "1px solid #444" }}
-        />
-        <button
-          type="submit"
-          disabled={pending || status === "sent"}
-          style={{ padding: 12, fontSize: 16, borderRadius: 6, cursor: "pointer" }}
-        >
-          {status === "sent"
-            ? "Sent — check your inbox"
-            : pending
-              ? "Sending…"
-              : "Send magic link"}
-        </button>
-      </form>
-
-      {message && (
-        <p style={{ marginTop: 16, color: status === "error" ? "#e5484d" : "#46a758" }}>
-          {message}
+    <main className="auth-hero">
+      <div className="auth-card">
+        <h1 className="auth-title">vod-review</h1>
+        <p className="auth-sub">
+          AI VOD review for League of Legends. Enter your email and we&apos;ll send
+          a magic link — no password.
         </p>
-      )}
+
+        <form onSubmit={handleSubmit} style={{ display: "grid", gap: 16, marginTop: 8 }}>
+          <label className="label">
+            Email
+            <input
+              type="email"
+              required
+              className="input"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </label>
+
+          <button
+            type="submit"
+            className="btn btn--dark"
+            disabled={pending || status === "sent"}
+            style={{ width: "100%", padding: "14px 20px", fontSize: 16 }}
+          >
+            {status === "sent"
+              ? "Sent — check your inbox"
+              : pending
+                ? "Sending…"
+                : "Send magic link"}
+          </button>
+        </form>
+
+        {message && (
+          <p
+            style={{
+              marginTop: 16,
+              fontSize: 14,
+              color: status === "error" ? "var(--loss)" : "var(--win)",
+            }}
+          >
+            {message}
+          </p>
+        )}
+      </div>
     </main>
   );
 }

@@ -17,11 +17,7 @@ export default function LogoutButton() {
   }
 
   return (
-    <button
-      onClick={onClick}
-      disabled={pending}
-      style={{ padding: "8px 14px", fontSize: 14, borderRadius: 6, cursor: "pointer" }}
-    >
+    <button className="btn btn--ghost" onClick={onClick} disabled={pending} style={{ padding: "10px 16px", fontSize: 14 }}>
       Log out
     </button>
   );
