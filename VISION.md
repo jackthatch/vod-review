@@ -82,6 +82,44 @@ are pre-computed and passed in as context.
 
 ---
 
+## To do next — game-state reasoning (the "coach" layer)
+
+**Goal:** surface key inflection points with timestamps, and judge whether a play
+was good or bad using full game-state context — e.g. "Baron with your TP toplaner
+in the side wave is fine; Baron while your fed ADC is stuck in a side wave away
+from the play is not."
+
+Four layers, built bottom-up:
+
+1. **Game-state extractor (`board.py`)** — ingest raw match + timeline and keep the
+   FULL board (all 10 players' position/gold/level/items per frame + every event),
+   not just "you". Deterministic. [in progress]
+2. **Situation builder (`situation_at`)** — given a timestamp, emit a concise
+   fact-sheet (who's where, who's fed, objective status, death timers, TP) that
+   grounds the LLM.
+3. **Inflection-point detection** — extend `moments.py` from *outcomes* (deaths,
+   lost objectives) to *decisions* (objective starts, fight engages, rotations,
+   recalls).
+4. **LLM coach** — feed situation + inflection point to OpenRouter; answer
+   what happened / good-or-bad-and-why / the better play.
+
+### Data reality (design around these)
+
+| Fact | Available? |
+|---|---|
+| Positions/gold/XP/levels (all 10 players) | ✅ timeline frames |
+| Item purchases (who's fed) | ✅ `ITEM_PURCHASED` events |
+| Objectives, turrets, deaths | ✅ timeline events |
+| Wave state | ⚠️ infer from position + minion deltas |
+| Vision | ⚠️ partial (`WARD_PLACED`/`WARD_KILLED`) |
+| Summoner cooldowns (is TP actually up?) | ❌ not in timeline |
+
+Known gaps to hedge on in the LLM prompt: **TP cooldown** (we know they *have* TP,
+not whether it's ready) and **exact wave state**. *(Corrects an earlier note:
+`ITEM_PURCHASED` events ARE present in the timeline.)*
+
+---
+
 ## Architecture decision: cloud-first, local companion later
 
 **Decision (2026-09):** ship the cloud service first, add a local companion app only
