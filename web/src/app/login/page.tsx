@@ -1,37 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { signInWithEmail } from "@/app/actions";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "sent" | "error">("idle");
   const [message, setMessage] = useState("");
-  const router = useRouter();
-  const supabase = createClient();
+  const [pending, startTransition] = useTransition();
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setStatus("idle");
     setMessage("");
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
+    startTransition(async () => {
+      const res = await signInWithEmail(email, window.location.origin);
+      if (res.error) {
+        setStatus("error");
+        setMessage(res.error);
+        return;
+      }
+      setStatus("sent");
+      setMessage("Check your email for a magic link.");
     });
-
-    if (error) {
-      setStatus("error");
-      setMessage(error.message);
-      return;
-    }
-
-    setStatus("sent");
-    setMessage("Check your email for a magic link.");
-    router.refresh();
   }
 
   return (
@@ -52,10 +43,14 @@ export default function LoginPage() {
         />
         <button
           type="submit"
-          disabled={status === "sent"}
+          disabled={pending || status === "sent"}
           style={{ padding: 12, fontSize: 16, borderRadius: 6, cursor: "pointer" }}
         >
-          {status === "sent" ? "Sent — check your inbox" : "Send magic link"}
+          {status === "sent"
+            ? "Sent — check your inbox"
+            : pending
+              ? "Sending…"
+              : "Send magic link"}
         </button>
       </form>
 

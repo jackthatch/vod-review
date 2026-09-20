@@ -60,3 +60,24 @@ export async function saveRiotId(riotId: string) {
   revalidatePath("/dashboard");
   return { ok: true };
 }
+
+// Send a magic-link email. `origin` is passed from the client so the redirect
+// works on any deployment URL (production, preview, localhost).
+export async function signInWithEmail(email: string, origin: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: `${origin}/auth/callback`,
+    },
+  });
+  if (error) {
+    return { error: error.message };
+  }
+  return { ok: true };
+}
+
+export async function signOut() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+}

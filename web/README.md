@@ -20,11 +20,13 @@ npm run dev
 
 | Var | Purpose | Where |
 |---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | public |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon key (public-by-design) | public |
+| `SUPABASE_URL` | Supabase project URL | server-side (Secret) |
+| `SUPABASE_ANON_KEY` | anon key | server-side (Secret) |
 
-Set both in the Vercel dashboard for production. The `service_role` key and DB
-password are **backend-only** — never put them here.
+Both are **server-side only** (no `NEXT_PUBLIC_` prefix). Auth is done via server
+actions, so no Supabase value is exposed to the browser. Set both as regular
+(Secret) env vars in the Vercel dashboard for production. The `service_role` key
+and DB password are **backend-only** — never put them in Vercel.
 
 ## Database
 
