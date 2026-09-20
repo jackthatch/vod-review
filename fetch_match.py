@@ -108,18 +108,24 @@ def _gold_at(snapshots, t_min):
     return best
 
 
+def _participant_items(p):
+    """Final item build (items 0..5) and trinket (item6) for a participant."""
+    items = [p.get(f"item{i}") for i in range(6)]
+    items = [i for i in items if i]
+    return items, p.get("item6")
+
+
 def match_detail(match, me_id):
     """Extract the display detail for a match: items, full participant roster,
     CS/gold/level, queue name and multi-kills. Feeds the op.gg-style UI."""
     info = match["info"]
     me = next(p for p in info["participants"] if p["participantId"] == me_id)
 
-    main_items = [me.get(f"item{i}") for i in range(6)]  # items 0..5
-    main_items = [i for i in main_items if i]
-    trinket = me.get("item6")
+    main_items, trinket = _participant_items(me)
 
     participants = []
     for p in info["participants"]:
+        p_items, p_trinket = _participant_items(p)
         participants.append({
             "participant_id": p["participantId"],
             "champion": p["championName"],
@@ -131,6 +137,8 @@ def match_detail(match, me_id):
             "level": p.get("champLevel"),
             "gold": p.get("goldEarned", 0),
             "cs": p.get("totalMinionsKilled", 0) + p.get("neutralMinionsKilled", 0),
+            "items": p_items,
+            "trinket": p_trinket,
             "is_me": p["participantId"] == me_id,
             "summoner": p.get("riotIdGameName") or p.get("summonerName"),
         })

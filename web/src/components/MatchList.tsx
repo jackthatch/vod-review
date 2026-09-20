@@ -99,13 +99,22 @@ function MatchCard({
   );
 }
 
-function ItemIcon({ id, trinket }: { id: number; trinket?: boolean }) {
+function ItemIcon({
+  id,
+  trinket,
+  size = 24,
+}: {
+  id: number;
+  trinket?: boolean;
+  size?: number;
+}) {
   return (
     <img
       className={`item-icon ${trinket ? "item-icon--trinket" : ""}`}
       src={itemIcon(id)}
       alt=""
       loading="lazy"
+      style={{ width: size, height: size }}
     />
   );
 }
@@ -113,11 +122,23 @@ function ItemIcon({ id, trinket }: { id: number; trinket?: boolean }) {
 function ParticipantRow({ p }: { p: Participant }) {
   return (
     <div className={`participant-row ${p.is_me ? "participant-row--me" : ""}`}>
-      <ChampionIcon champion={p.champion} size={26} />
-      <span className="participant-row__name">{p.summoner || p.champion}</span>
-      <span className="participant-row__kda">
-        {p.kills}/{p.deaths}/{p.assists}
-      </span>
+      <ChampionIcon champion={p.champion} size={30} />
+      <div className="participant-row__info">
+        <div className="participant-row__top">
+          <span className="participant-row__name">{p.summoner || p.champion}</span>
+          <span className="participant-row__kda">
+            {p.kills}/{p.deaths}/{p.assists}
+          </span>
+        </div>
+        {(p.items?.length > 0 || p.trinket) && (
+          <div className="participant-row__items">
+            {p.items?.map((id) => (
+              <ItemIcon key={id} id={id} size={18} />
+            ))}
+            {p.trinket && <ItemIcon id={p.trinket} trinket size={18} />}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

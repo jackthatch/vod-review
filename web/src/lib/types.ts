@@ -36,6 +36,8 @@ export type Participant = {
   level: number | null;
   gold: number;
   cs: number;
+  items: number[];
+  trinket: number | null;
   is_me: boolean;
   summoner: string | null;
 };

@@ -582,8 +582,19 @@ h3 {
   padding: 4px 6px;
   margin: 0 -6px;
 }
-.participant-row__name {
+.participant-row__info {
   flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.participant-row__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.participant-row__name {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -598,6 +609,12 @@ h3 {
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.participant-row__items {
+  display: flex;
+  align-items: center;
+  gap: 3px;
 }
 
 .empty-state {
