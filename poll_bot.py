@@ -54,8 +54,10 @@ def match_payload(story):
 
 def process_user(store, riot, user, count, dry_run):
     user_id = user["id"]
-    name, tag, region = user["riot_name"], user["riot_tag"], user["riot_region"]
-    if not (name and tag and region):
+    name, tag = user["riot_name"], user["riot_tag"]
+    # Region is resolved (with a na1 default) by the caller via riot.set_region().
+    # Only name + tag are required to be a valid subscriber.
+    if not (name and tag):
         return 0, []
 
     try:
