@@ -1,10 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import PreferencesForm from "@/components/PreferencesForm";
 import RiotIdForm from "@/components/RiotIdForm";
 import MatchList from "@/components/MatchList";
 import LogoutButton from "@/components/LogoutButton";
-import type { Preferences, Profile, Match } from "@/lib/types";
+import type { Profile, Match } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -19,12 +18,6 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
-
-  const { data: prefs } = await supabase
-    .from("preferences")
     .select("*")
     .eq("id", user.id)
     .single();
@@ -45,16 +38,6 @@ export default async function DashboardPage() {
     riot_region: null,
   };
 
-  const prefsRow: Preferences = prefs ?? {
-    role: "JUNGLE",
-    main_champions: [],
-    comparison_targets: [],
-    overstay_gold: 1000,
-    contest_range: 3000,
-    objective_window: 30,
-    spike_gap_min: 6.0,
-  };
-
   return (
     <main style={{ maxWidth: 900, margin: "0 auto", padding: "24px 20px" }}>
       <header
@@ -73,8 +56,6 @@ export default async function DashboardPage() {
       </header>
 
       <RiotIdForm profile={p} />
-
-      <PreferencesForm prefs={prefsRow} />
 
       <MatchList matches={(matches as Match[] | null) ?? []} />
     </main>
