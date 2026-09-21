@@ -93,15 +93,16 @@ Four layers, built bottom-up:
 
 1. **Game-state extractor (`board.py`)** — ingest raw match + timeline and keep the
    FULL board (all 10 players' position/gold/level/items per frame + every event),
-   not just "you". Deterministic. [in progress]
+   not just "you". Deterministic. ✅ done (+ synthetic smoke test)
 2. **Situation builder (`situation_at`)** — given a timestamp, emit a concise
    fact-sheet (who's where, who's fed, objective status, death timers, TP) that
-   grounds the LLM.
-3. **Inflection-point detection** — extend `moments.py` from *outcomes* (deaths,
-   lost objectives) to *decisions* (objective starts, fight engages, rotations,
-   recalls).
+   grounds the LLM. ✅ done
+3. **Inflection-point detection (`inflection.py`)** — flag *decisions* on the full
+   board: objective contests (when champions converge on a pit, not just who wins
+   it), teamfights, cross-map rotations, recalls. Deterministic, chronological
+   decision timeline. ✅ done (+ synthetic smoke test)
 4. **LLM coach** — feed situation + inflection point to OpenRouter; answer
-   what happened / good-or-bad-and-why / the better play.
+   what happened / good-or-bad-and-why / the better play. ← next
 
 ### Data reality (design around these)
 
