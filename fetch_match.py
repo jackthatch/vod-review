@@ -286,6 +286,8 @@ def main():
     ap.add_argument("--region", required=True)
     ap.add_argument("--count", type=int, default=5)
     ap.add_argument("--out", default="data")
+    ap.add_argument("--raw", action="store_true",
+                    help="also dump raw match + timeline JSON for board.py")
     args = ap.parse_args()
 
     key = os.environ.get("RIOT_API_KEY")
@@ -314,6 +316,13 @@ def main():
         path = os.path.join(args.out, f"{mid}.json")
         with open(path, "w") as f:
             json.dump(story, f, indent=2)
+        if args.raw:
+            rawdir = os.path.join(args.out, "raw")
+            os.makedirs(rawdir, exist_ok=True)
+            with open(os.path.join(rawdir, f"{mid}.match.json"), "w") as f:
+                json.dump(match, f)
+            with open(os.path.join(rawdir, f"{mid}.timeline.json"), "w") as f:
+                json.dump(tl, f)
         print(f"saved {path} — {story['champion']} "
               f"{story['stats']['kills']}/{story['stats']['deaths']}/"
               f"{story['stats']['assists']} "

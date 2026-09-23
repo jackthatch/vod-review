@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import RiotIdForm from "@/components/RiotIdForm";
 import MatchList from "@/components/MatchList";
+import FetchGamesButton from "@/components/FetchGamesButton";
 import LogoutButton from "@/components/LogoutButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import type { Profile, Match } from "@/lib/types";
@@ -58,6 +59,7 @@ export default async function DashboardPage() {
 
       <main className="container">
         <RiotIdForm profile={p} />
+        <FetchGamesButton />
         <MatchList matches={(matches as Match[] | null) ?? []} />
       </main>
     </>
