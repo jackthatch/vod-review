@@ -28,7 +28,7 @@ import argparse
 import json
 import math
 
-from board import OBJECTIVE_POS, _dist, _lane
+from board import OBJECTIVE_POS, _dist, _lane, monster_label
 
 
 # --- detectors -------------------------------------------------------------
@@ -70,8 +70,8 @@ def detect_objective_contests(board, radius=3500, min_players=4, lookback_min=1.
                 "secured_by": ev.get("team"),
                 "secured_min": kill_min,
                 "score": 2500,
-                "detail": (f"{monster} contest began at {start}min "
-                           f"(>={min_players} champions at the pit), "
+                "detail": (f"{monster_label(monster, ev.get('sub'))} contest began "
+                           f"at {start}min (>={min_players} champions at the pit), "
                            f"secured by team {ev.get('team')} at {kill_min}min"),
             })
     return inflections

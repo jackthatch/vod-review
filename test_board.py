@@ -93,6 +93,12 @@ def main():
     assert len(b["snapshots"]) == 4
     assert len(b["snapshots"][0]["players"]) == 10
 
+    # Regression: frame times must be real minutes. A bad "minutes / 10" scaling
+    # (Math.round((i*fi)/60000)/10 in the TS port) once made every frame 10x too
+    # early, so gold-at-death lookups always returned the final snapshot's gold.
+    assert b["snapshots"][3]["min"] == 3.0, b["snapshots"][3]["min"]
+    assert b["duration_min"] == 4.0, b["duration_min"]
+
     # events were flattened across frames
     kinds = [e["type"] for e in b["events"]]
     assert "ITEM_PURCHASED" in kinds

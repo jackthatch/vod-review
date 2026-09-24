@@ -182,7 +182,7 @@ def build_context(match, timeline, puuid, top_moments=4, top_inflections=6,
     for o in story["objectives"]:
         objectives.append({
             "min": o["min"],
-            "monster": o["type"],
+            "monster": board_mod.monster_label(o["type"], o.get("sub")),
             "sub": o.get("sub"),
             "team": "mine" if o.get("team") == me["team"] else "enemy",
             "smited_by_me": o.get("mine"),

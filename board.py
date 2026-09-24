@@ -39,6 +39,32 @@ VOID_GRUBS = "HORDE"
 ATKHAN = "ATKHAN"
 ELDER = "ELDER_DRAGON"
 
+# Friendly display names for objective monster enums, so the coach/UI say
+# "Void Grubs" rather than the raw enum "HORDE".
+MONSTER_NAMES = {
+    VOID_GRUBS: "Void Grubs",
+    DRAGON: "Dragon",
+    RIFT_HERALD: "Rift Herald",
+    BARON: "Baron Nashor",
+    ATKHAN: "Atakhan",
+    ELDER: "Elder Dragon",
+}
+DRAGON_SUB_NAMES = {
+    "EARTH_DRAGON": "Earth Drake",
+    "FIRE_DRAGON": "Fire Drake",
+    "WATER_DRAGON": "Ocean Drake",
+    "AIR_DRAGON": "Cloud Drake",
+    "HEXTECH_DRAGON": "Hextech Drake",
+    "CHEMTECH_DRAGON": "Chemtech Drake",
+}
+
+
+def monster_label(monster, sub=None):
+    """Human-friendly objective name; prefers the dragon sub-type when present."""
+    if sub and sub in DRAGON_SUB_NAMES:
+        return DRAGON_SUB_NAMES[sub]
+    return MONSTER_NAMES.get(monster, monster or "objective")
+
 # Approximate map-center coordinates of the major objective pits (map units).
 # Best-effort: used only to compute "how far is X from the objective".
 OBJECTIVE_POS = {

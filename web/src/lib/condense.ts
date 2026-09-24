@@ -193,7 +193,7 @@ export function condense(
 
   const fi = timeline.info.frameInterval; // ms per frame
   const frames = timeline.info.frames;
-  const durationMin = Math.round((fi * frames.length) / 60000) / 10;
+  const durationMin = Math.round((fi * frames.length) / 6000) / 10;
 
   // Per-frame snapshot of MY state.
   const snapshots: Snapshot[] = [];
@@ -203,7 +203,7 @@ export function condense(
     const ds = pf.damageStats ?? {};
     const cs = pf.championStats ?? {};
     snapshots.push({
-      min: Math.round((i * fi) / 60000) / 10,
+      min: Math.round((i * fi) / 6000) / 10,
       level: pf.level,
       xp: pf.xp ?? null,
       total_gold: pf.totalGold,

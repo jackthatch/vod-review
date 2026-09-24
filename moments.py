@@ -25,6 +25,8 @@ import argparse
 import json
 import math
 
+from board import monster_label
+
 
 def _dist(a, b):
     """Euclidean distance between two {x, y} points (LoL map units)."""
@@ -87,8 +89,8 @@ def detect_contested_objectives(match, range_units):
                 "sub": o.get("sub"),
                 "distance": round(d),
                 "score": 3000 - d,  # closer = higher impact
-                "detail": (f"{o.get('type') or 'objective'} secured by enemy at "
-                           f"{o['min']}min while you were {round(d)} units away"),
+                "detail": (f"{monster_label(o.get('type'), o.get('sub'))} secured by "
+                           f"enemy at {o['min']}min while you were {round(d)} units away"),
             })
     return moments
 
@@ -109,7 +111,8 @@ def detect_deaths_at_objective(match, window_sec):
                     "objective_min": o["min"],
                     "score": 2000 - dt,  # closer to objective = more tied to fight
                     "detail": (f"died at {d['min']}min "
-                               f"{'%.0f' % dt}s around {o.get('type') or 'objective'} "
+                               f"{'%.0f' % dt}s around "
+                               f"{monster_label(o.get('type'), o.get('sub'))} "
                                f"fight (obj at {o['min']}min)"),
                 })
                 break  # one objective per death is enough

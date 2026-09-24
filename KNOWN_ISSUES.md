@@ -91,6 +91,23 @@ is needed to confirm real field names (esp. per-frame `events` vs top-level
 
 ## Resolved
 
+### TS time-scaling bug (10×) + objective naming (2026-09-24)
+
+Two bugs surfaced in a real web recap:
+
+- **Every death reported the same unspent gold (1807g ×3).** Root cause: the TS
+  port (`condense.ts` + `board.ts`) computed frame times as
+  `Math.round((i * fi) / 60000) / 10` — i.e. **minutes ÷ 10**. Every snapshot
+  time was 10× too small, so `goldAt(deathTime)` always fell through to the
+  *last* snapshot and returned its unspent gold for every death. Also corrupted
+  `first_clear_min` (showed "0.2min"), `duration_min`, and CS/gold per min.
+  Fixed the divisor (÷6000). Python (`fetch_match.py`/`board.py`) was already
+  correct. Regression assertion added in `test_board.py`.
+- **Objective enums leaked into the recap ("HORDE").** Added `monster_label()`
+  (board.py / board.ts) mapping enums → friendly names: `HORDE` → "Void Grubs",
+  `RIFTHERALD` → "Rift Herald", dragon sub-types → "Earth Drake" etc. Used in
+  moments + inflection details and the coach context.
+
 ### AI recap moved off the fetch path → on-demand + cached (2026-09-24)
 
 The LLM call used to run inline in `fetchAndAnalyze` (one call per match, up to

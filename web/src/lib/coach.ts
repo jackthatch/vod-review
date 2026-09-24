@@ -9,7 +9,7 @@
 
 import type { Moment } from "@/lib/types";
 import type { Story } from "@/lib/condense";
-import { situationAt, type Board } from "@/lib/board";
+import { monsterLabel, situationAt, type Board } from "@/lib/board";
 import { analyze as analyzeInflections } from "@/lib/inflection";
 import { analyze as analyzeMoments } from "@/lib/moments";
 
@@ -153,7 +153,7 @@ export function buildContext(
 
   const objectives = story.objectives.map((o) => ({
     min: o.min,
-    monster: o.type,
+    monster: monsterLabel(o.type, o.sub),
     sub: o.sub,
     team: o.team === me.team ? "mine" : "enemy",
     smited_by_me: o.mine,

@@ -29,6 +29,35 @@ const VOID_GRUBS = "HORDE";
 const ATKHAN = "ATKHAN";
 export const ELDER = "ELDER_DRAGON";
 
+// Friendly display names for objective monster enums, so the coach/UI say
+// "Void Grubs" rather than the raw enum "HORDE".
+const MONSTER_NAMES: Record<string, string> = {
+  [VOID_GRUBS]: "Void Grubs",
+  [DRAGON]: "Dragon",
+  [RIFT_HERALD]: "Rift Herald",
+  [BARON]: "Baron Nashor",
+  [ATKHAN]: "Atakhan",
+  [ELDER]: "Elder Dragon",
+};
+const DRAGON_SUB_NAMES: Record<string, string> = {
+  EARTH_DRAGON: "Earth Drake",
+  FIRE_DRAGON: "Fire Drake",
+  WATER_DRAGON: "Ocean Drake",
+  AIR_DRAGON: "Cloud Drake",
+  HEXTECH_DRAGON: "Hextech Drake",
+  CHEMTECH_DRAGON: "Chemtech Drake",
+};
+
+/** Human-friendly objective name; prefers the dragon sub-type when present. */
+export function monsterLabel(
+  monster: string | null | undefined,
+  sub?: string | null,
+): string {
+  if (sub && DRAGON_SUB_NAMES[sub]) return DRAGON_SUB_NAMES[sub];
+  if (monster && MONSTER_NAMES[monster]) return MONSTER_NAMES[monster];
+  return monster || "objective";
+}
+
 // Approximate map-center coordinates of objective pits (map units).
 export const OBJECTIVE_POS: Record<string, { x: number; y: number }> = {
   [BARON]: { x: 4993, y: 10461 },
@@ -208,14 +237,14 @@ export function extractBoard(
       };
     }
     snapshots.push({
-      min: Math.round((i * frameInterval) / 60000) / 10,
+      min: Math.round((i * frameInterval) / 6000) / 10,
       players: fp,
     });
   });
 
   return {
     match_id: match.metadata.matchId,
-    duration_min: Math.round((frameInterval * frames.length) / 60000) / 10,
+    duration_min: Math.round((frameInterval * frames.length) / 6000) / 10,
     frame_interval: frameInterval,
     me_id: me.participantId,
     players,

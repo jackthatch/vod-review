@@ -9,6 +9,7 @@
 
 import type { Moment } from "@/lib/types";
 import type { Story, Snapshot } from "@/lib/condense";
+import { monsterLabel } from "@/lib/board";
 
 type AnalyzeOptions = {
   overstay_gold: number;
@@ -74,7 +75,7 @@ function detectContestedObjectives(story: Story, rangeUnits: number): Moment[] {
         sub: o.sub,
         distance: Math.round(d),
         score: 3000 - d, // closer = higher impact
-        detail: `${o.type ?? "objective"} secured by enemy at ${o.min}min while you were ${Math.round(d)} units away`,
+        detail: `${monsterLabel(o.type, o.sub)} secured by enemy at ${o.min}min while you were ${Math.round(d)} units away`,
       });
     }
   }
@@ -94,7 +95,7 @@ function detectDeathsAtObjective(story: Story, windowSec: number): Moment[] {
           sub: o.sub,
           objective_min: o.min,
           score: 2000 - dt, // closer to objective = more tied to fight
-          detail: `died at ${d.min}min ${Math.round(dt)}s around ${o.type ?? "objective"} fight (obj at ${o.min}min)`,
+          detail: `died at ${d.min}min ${Math.round(dt)}s around ${monsterLabel(o.type, o.sub)} fight (obj at ${o.min}min)`,
         });
         break; // one objective per death is enough
       }

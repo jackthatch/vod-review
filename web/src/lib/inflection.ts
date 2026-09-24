@@ -7,7 +7,7 @@
 // me-only Story.
 
 import type { Moment } from "@/lib/types";
-import { OBJECTIVE_POS, dist, lane, type Board } from "@/lib/board";
+import { OBJECTIVE_POS, dist, lane, monsterLabel, type Board } from "@/lib/board";
 
 function detectObjectiveContests(
   board: Board,
@@ -45,7 +45,7 @@ function detectObjectiveContests(
         secured_by: ev.team,
         secured_min: killMin,
         score: 2500,
-        detail: `${monster} contest began at ${start}min (>=${minPlayers} champions at the pit), secured by team ${ev.team} at ${killMin}min`,
+        detail: `${monsterLabel(monster, ev.sub)} contest began at ${start}min (>=${minPlayers} champions at the pit), secured by team ${ev.team} at ${killMin}min`,
       });
     }
   }
