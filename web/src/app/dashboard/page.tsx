@@ -24,9 +24,13 @@ export default async function DashboardPage() {
     .eq("id", user.id)
     .single();
 
+  // Select explicit columns — coach_context is large and only needed
+  // server-side (by generateRecap), so keep it out of the client payload.
   const { data: matches } = await supabase
     .from("matches")
-    .select("*")
+    .select(
+      "id, champion, role, win, duration_min, kda, moments, summary, detail, fetched_at",
+    )
     .eq("user_id", user.id)
     .order("fetched_at", { ascending: false })
     .limit(20);

@@ -77,18 +77,7 @@ today.
 
 ---
 
-### 4. LLM summary generation risks Vercel serverless timeout
-
-**Status:** open (personal prototype is fine; matters before real deploy).
-
-`fetchAndAnalyze` now makes one OpenRouter call **per match** (up to 5) inline
-in the server action. Combined with the Riot calls this can exceed Vercel's
-serverless time limit. Mitigation options: generate summaries in a background
-job / edge function, or fetch+flag synchronously and backfill summaries async.
-
----
-
-### 5. `board.py`/`inflection.py` field names unverified against live data
+### 4. `board.py`/`inflection.py` field names unverified against live data
 
 **Status:** open (blocked on a Riot dev key + live fetch).
 
@@ -102,4 +91,18 @@ is needed to confirm real field names (esp. per-frame `events` vs top-level
 
 ## Resolved
 
-_(none yet)_
+### AI recap moved off the fetch path → on-demand + cached (2026-09-24)
+
+The LLM call used to run inline in `fetchAndAnalyze` (one call per match, up to
+5) — a serverless-timeout risk and a silent-failure trap. Now:
+
+- `fetchAndAnalyze` is **deterministic only** (condense + moments + build the
+  coach fact-sheet, no LLM) — fast, no timeout risk.
+- The recap is generated **on demand** via a "Get AI recap" button
+  (`generateRecap` server action), then saved to `matches.summary` — viewing it
+  later never regenerates.
+- The deterministic fact-sheet is stored in `matches.coach_context` at fetch
+  time so the recap button needs no Riot round-trips.
+
+Requires migration `0003_coach_context.sql`. Existing rows fetched before this
+change have no `coach_context` and must be re-fetched to enable the button.

@@ -88,12 +88,12 @@ export async function signOut() {
 }
 
 // Shape a condensed Story into the `matches` row the web app reads.
-// Mirrors match_payload() in poll_bot.py (id, champion, role, win,
-// duration_min, kda, moments, summary, detail).
+// `summary` is intentionally NOT included: the AI recap is generated on demand
+// (generateRecap) and we don't want a re-fetch to clobber a saved recap.
 function matchPayload(
   story: Story,
   moments: ReturnType<typeof analyze>,
-  summary: string | null,
+  coachContext: ReturnType<typeof buildContext> | null,
 ) {
   const s = story.stats;
   return {
@@ -104,15 +104,16 @@ function matchPayload(
     duration_min: story.duration_min,
     kda: `${s.kills}/${s.deaths}/${s.assists}`,
     moments, // jsonb — list of ranked moment dicts
-    summary, // LLM narrative (markdown)
+    coach_context: coachContext, // jsonb — deterministic fact-sheet for the recap
     detail: story.detail, // jsonb — items, roster, cs/gold, queue
   };
 }
 
 // On-demand "fetch + analyze my latest games". Runs server-side: resolves the
 // user's Riot ID + region + preference thresholds, pulls match + timeline from
-// the Riot API, condenses each game, flags moments, and upserts the results as
-// the authenticated user (RLS scopes the write via user_id).
+// the Riot API, condenses each game, flags moments, builds the deterministic
+// coach context, and upserts the results. NO LLM call here — the AI recap is a
+// separate on-demand action (see generateRecap).
 export async function fetchAndAnalyze(count = 3): Promise<{
   error?: string;
   count?: number;
@@ -154,13 +155,16 @@ export async function fetchAndAnalyze(count = 3): Promise<{
     };
   }
 
-  // Optional: LLM summary. If missing, we still fetch + flag moments, just
-  // without the AI narrative.
-  const openRouterKey = process.env.OPENROUTER_API_KEY;
-
   // Cap the request small to stay inside serverless timeouts (each game = 2
-  // Riot calls + 1 optional LLM call).
+  // Riot calls; no LLM here, so this is fast).
   const capped = Math.max(1, Math.min(Math.floor(count), 5));
+
+  const opts = {
+    overstay_gold: prefs?.overstay_gold ?? 1000,
+    range_units: prefs?.contest_range ?? 3000,
+    window_sec: prefs?.objective_window ?? 30,
+    gap_min: prefs?.spike_gap_min ?? 6.0,
+  };
 
   const riot = new Riot(apiKey, region);
   const warnings: string[] = [];
@@ -174,36 +178,20 @@ export async function fetchAndAnalyze(count = 3): Promise<{
       const match = await riot.match(mid);
       const tl = await riot.timeline(mid);
       const story = condense(match, tl, puuid);
-      const moments = analyze(story, {
-        overstay_gold: prefs?.overstay_gold ?? 1000,
-        range_units: prefs?.contest_range ?? 3000,
-        window_sec: prefs?.objective_window ?? 30,
-        gap_min: prefs?.spike_gap_min ?? 6.0,
-      });
+      const moments = analyze(story, opts);
 
-      // Generate the grounded AI review (best-effort: a failure here shouldn't
-      // drop the whole match — it just leaves the summary null).
-      let summary: string | null = null;
-      if (openRouterKey) {
-        try {
-          const board = extractBoard(match, tl, puuid);
-          const ctx = buildContext(story, board, 4, 6, {
-            overstay_gold: prefs?.overstay_gold ?? 1000,
-            range_units: prefs?.contest_range ?? 3000,
-            window_sec: prefs?.objective_window ?? 30,
-            gap_min: prefs?.spike_gap_min ?? 6.0,
-          });
-          summary = await generateSummary(ctx, openRouterKey);
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e);
-          console.error(`summary failed for ${mid}:`, e);
-          warnings.push(`AI review failed for one game: ${msg}`);
-        }
-      } else if (warnings.length === 0) {
-        warnings.push("OPENROUTER_API_KEY not set — games saved without an AI review.");
+      // Deterministic coach fact-sheet (no LLM) — stored so the recap button
+      // doesn't need to re-fetch Riot data later.
+      let coachContext: ReturnType<typeof buildContext> | null = null;
+      try {
+        const board = extractBoard(match, tl, puuid);
+        coachContext = buildContext(story, board, 4, 6, opts);
+      } catch (e) {
+        console.error(`coach context failed for ${mid}:`, e);
+        warnings.push(`Analysis context failed for one game.`);
       }
 
-      payloads.push(matchPayload(story, moments, summary));
+      payloads.push(matchPayload(story, moments, coachContext));
     }
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Fetch failed" };
@@ -222,5 +210,75 @@ export async function fetchAndAnalyze(count = 3): Promise<{
     count: payloads.length,
     warnings: warnings.length ? warnings : undefined,
   };
+}
+
+// On-demand AI recap for a single match. Reads the stored coach context, calls
+// the LLM once, and persists the result in matches.summary so viewing it later
+// never regenerates it. Returns the saved recap.
+export async function generateRecap(matchId: string): Promise<{
+  error?: string;
+  summary?: string;
+}> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const { data: row } = await supabase
+    .from("matches")
+    .select("id, summary, coach_context")
+    .eq("id", matchId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!row) {
+    return { error: "Match not found." };
+  }
+  // Already generated — return the saved recap (no LLM call, no refetch).
+  if (row.summary) {
+    return { summary: row.summary as string };
+  }
+
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    return {
+      error:
+        "Server is missing OPENROUTER_API_KEY. Set it in Vercel → Settings → " +
+        "Environment Variables, then redeploy.",
+    };
+  }
+
+  if (!row.coach_context) {
+    return {
+      error:
+        "No saved analysis for this game — click “Fetch latest games” first, " +
+        "then generate the recap.",
+    };
+  }
+
+  let summary: string;
+  try {
+    summary = await generateSummary(
+      row.coach_context as Parameters<typeof generateSummary>[0],
+      apiKey,
+    );
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Recap failed" };
+  }
+
+  const { error } = await supabase
+    .from("matches")
+    .update({ summary })
+    .eq("id", matchId)
+    .eq("user_id", user.id);
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/dashboard");
+  return { summary };
 }
 

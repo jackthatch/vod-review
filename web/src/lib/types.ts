@@ -66,6 +66,7 @@ export type Match = {
   kda: string;
   moments: Moment[] | null;
   summary: string | null;
+  coach_context?: Record<string, unknown> | null;
   detail: MatchDetail | null;
   fetched_at: string;
 };

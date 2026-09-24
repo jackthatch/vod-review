@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { championIcon, itemIcon } from "@/lib/ddragon";
+import { generateRecap } from "@/app/actions";
 import type { Match, Participant } from "@/lib/types";
 
 function fmtGold(n: number): string {
@@ -232,18 +233,51 @@ function Markdown({ text }: { text: string }) {
 }
 
 function ReviewPanel({ match }: { match: Match }) {
+  // State is initialized from the server-provided recap and reset on match
+  // change via `key={match.id}` on the parent (remounts the component).
   const moments = match.moments ?? [];
+  const [summary, setSummary] = useState<string | null>(match.summary ?? null);
+  const [error, setError] = useState("");
+  const [pending, startTransition] = useTransition();
+
+  function onGenerate() {
+    startTransition(async () => {
+      const res = await generateRecap(match.id);
+      if (res.error) {
+        setError(res.error);
+      } else if (res.summary) {
+        setSummary(res.summary);
+      }
+    });
+  }
+
   return (
     <section className="card review-panel">
-      <h3 className="section-title">AI review</h3>
-      {match.summary ? (
-        <Markdown text={match.summary} />
+      <div className="review-panel__head">
+        <h3 className="section-title">AI recap</h3>
+        {!summary && (
+          <button
+            className="btn btn--dark btn--small"
+            onClick={onGenerate}
+            disabled={pending}
+          >
+            {pending ? "Generating…" : "Get AI recap"}
+          </button>
+        )}
+      </div>
+
+      {summary ? (
+        <Markdown text={summary} />
       ) : (
         <p className="muted">
-          No AI review for this game yet — click &ldquo;Fetch latest games&rdquo;
-          to generate it.
+          {pending
+            ? "Analyzing this game…"
+            : "Generate an AI recap for this game. It's saved once generated."}
         </p>
       )}
+
+      {error && <p className="review-panel__error">{error}</p>}
+
       {moments.length > 0 && (
         <>
           <h4 className="review-panel__subtitle">Flagged moments</h4>
@@ -294,7 +328,7 @@ export default function MatchList({ matches }: { matches: Match[] }) {
           ))}
         </div>
         <div className="match-side">
-          {selected && <ReviewPanel match={selected} />}
+          {selected && <ReviewPanel key={selected.id} match={selected} />}
           {selected && <ParticipantsPanel match={selected} />}
         </div>
       </div>

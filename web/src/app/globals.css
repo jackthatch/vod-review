@@ -179,6 +179,11 @@ h3 {
   height: 40px;
 }
 
+.btn--small {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
 /* ── Cards ───────────────────────────────────────────────── */
 
 .card {
@@ -632,6 +637,23 @@ h3 {
 
 .review-panel {
   margin-top: 4px;
+}
+
+.review-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.review-panel__head .section-title {
+  margin: 0;
+}
+
+.review-panel__error {
+  color: var(--loss);
+  font-size: 13px;
+  margin: 10px 0 0;
 }
 
 .review-panel__subtitle {
