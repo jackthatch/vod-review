@@ -1,0 +1,68 @@
+# Jungle Research Study — how games are won and lost
+
+A **long-running research program** to build an evidence base on how League of
+Legends games are actually won and lost, focused on the **jungle role**. This is
+the input that will eventually steer the AI coach: what to look for, what
+correlates with winning, and which decisions matter most.
+
+- **Method:** the `deep-research` skill (parallel fan-out, multi-source
+  validation, confidence tracking, cited reports).
+- **Output:** cited findings appended to [`jungle-study.md`](jungle-study.md);
+  per-axis raw notes in [`findings/`](findings/).
+- **Cadence:** ongoing — one axis (or a small batch) per research run, appended.
+- **Source discipline:** every claim cited; critical claims need 2+ independent
+  sources or `confidence: Low`. Patch-specific facts must be dated.
+
+## Why this exists
+
+`docs/jungle-playbook.md` captures **durable domain knowledge** (archetypes,
+frameworks, leaks). This study goes further: it **sources and validates** the
+claims — does high CS/min actually correlate with jungle win rate? How much does
+first-drake control matter? Where do rank-tier leaks concentrate? — so the coach
+is grounded in evidence, not just expertise.
+
+## Axis backlog
+
+Status: ☐ planned · ◐ in progress · ☑ done (notes filed)
+
+### Win/loss mechanics
+- ◐ 1. How games are actually decided in solo queue (win conditions; snowball vs
+      coin-flip; the relative weight of early vs late game). → [`findings/01`](findings/01-how-games-are-decided.md)
+- ◐ 2. Causal impact of jungle play on win rate (what jungle behaviours
+      correlate most with winning — data from stat sites/analysts). → [`findings/02`](findings/02-jungle-impact-on-winrate.md)
+- ◐ 3. Objective value: drakes (incl. soul), Voidgrubs, Herald, Baron, Atakhan —
+      measured win-rate impact and correct prioritisation. → [`findings/03`](findings/03-objective-value.md)
+
+### Jungle macro
+- ☐ 4. Tempo & pathing theory (advanced clear/route theory; tempo as win driver).
+- ☐ 5. Gank theory: when ganks convert, which lanes, expected value.
+- ☐ 6. Vision & information advantage in the jungle; ward economy.
+- ☐ 7. Counter-jungling, invades, and vertical jungling — risk/reward.
+
+### Archetype & champion
+- ☐ 8. Win-rate drivers per jungle archetype (carry vs gank vs tank) — what
+      separates good from great players on each.
+- ☐ 9. Champion-pool effects on win rate; one-trick vs flexible pools.
+
+### Improvement & review
+- ☐ 10. What actually improves solo-queue players fastest (review methods,
+      coaching evidence, deliberate practice).
+- ☐ 11. Rank-tier leak distribution — which mistakes concentrate at which ranks.
+
+### Meta & data
+- ☐ 12. Current jungle meta snapshot (dated): top champions, tier lists, and
+      what the data says (re-verify per patch).
+
+## Method notes
+
+- Run via the `deep-research` skill: scope → parallel axes → synthesis →
+  cited report.
+- Hermes fans out at most 3 sub-agents at once — batch larger sets.
+- **Date every patch-dependent finding.** The meta drifts; mark freshness.
+- Prefer primary data (Riot/official stats, op.gg/u.gg/lolalytics aggregates,
+  Riot dev communications) over opinion pieces; flag analyst opinion as such.
+
+## Relation to the product
+
+`VISION.md` (mission) → `docs/jungle-playbook.md` (durable knowledge) →
+**this study** (validated evidence) → **the coach's prompts & metrics**.

@@ -69,10 +69,14 @@ verify before trusting; these shift with patches.)*
 | Rift Scuttler (scuttle) | 2:55 | 2:30 | first contested point; top + bottom river |
 | Elemental Drake | 5:00 | 5:00 | 4th drake → Dragon Soul |
 | Elder Dragon | after a team's 4th drake | 6:00 | spawns once later dragons are done |
-| Voidgrubs | 8:00 | — | despawns 14:45 (14:55 if in combat) |
+| Voidgrubs | 8:00 | — | despawns 14:45 (14:55 if in combat); no longer respawns |
 | Rift Herald | 15:00 | — | despawns 19:45 (19:55 if in combat) |
 | Baron Nashor | 20:00 | 6:00 | one of three forms |
-| Atakhan | 20:00 | — | spawn location decided at 14:00 by top-vs-bot combat |
+
+> **Patch note (2026):** **Atakhan was removed in patch 26.1 (2026)**, along with
+> Blood Roses and Feats of Strength; Baron spawns at 20:00 and first-blood (100g) /
+> first-turret (300g) gold was restored. Verify against the live patch before
+> relying on any row above. Source: [Riot Patch 26.1](https://www.leagueoflegends.com/en-us/news/game-updates/patch-26-1-notes/).
 
 **Why these matter for review:**
 
