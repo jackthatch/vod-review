@@ -9,7 +9,9 @@ correlates with winning, and which decisions matter most.
   validation, confidence tracking, cited reports).
 - **Output:** cited findings appended to [`jungle-study.md`](jungle-study.md);
   per-axis raw notes in [`findings/`](findings/).
-- **Cadence:** ongoing — one axis (or a small batch) per research run, appended.
+- **Cadence:** on demand — one axis (or a small batch) per research run, appended.
+  See **[`ONE-SHOT-RUN.md`](ONE-SHOT-RUN.md)** to knock out the whole study in a
+  single pass.
 - **Source discipline:** every claim cited; critical claims need 2+ independent
   sources or `confidence: Low`. Patch-specific facts must be dated.
 
