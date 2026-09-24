@@ -7,5 +7,8 @@ venv/
 # Fetched data (regenerate with fetch_match.py)
 data/
 
+# Generated reviews (regenerate with coach.py)
+reviews/
+
 # Env / secrets
 .env
