@@ -24,6 +24,7 @@ npm run dev
 | `SUPABASE_ANON_KEY` | anon key | server-side (Secret) |
 | `RIOT_API_KEY` | Riot Games API key (on-demand fetch) | server-side (Secret) |
 | `OPENROUTER_API_KEY` | OpenRouter key (AI review narrative) | server-side (Secret), optional |
+| `OPENROUTER_MODEL` | OpenRouter model id (default `anthropic/claude-sonnet-4`) | server-side, optional |
 
 These are **server-side only** (no `NEXT_PUBLIC_` prefix). Auth is done via server
 actions, so no Supabase value is exposed to the browser. Set them as regular

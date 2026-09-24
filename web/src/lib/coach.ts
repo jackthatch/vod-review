@@ -14,7 +14,7 @@ import { analyze as analyzeInflections } from "@/lib/inflection";
 import { analyze as analyzeMoments } from "@/lib/moments";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const DEFAULT_MODEL = "anthropic/claude-sonnet-4";
+const DEFAULT_MODEL = process.env.OPENROUTER_MODEL || "anthropic/claude-sonnet-4";
 
 // --- context assembly ------------------------------------------------------
 

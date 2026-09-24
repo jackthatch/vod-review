@@ -373,7 +373,9 @@ def main():
                     help="dir of raw match+timeline JSON from fetch_match.py --raw")
     ap.add_argument("--match", help="review a single match id (uses --raw-dir)")
     ap.add_argument("--out", default="reviews", help="output dir for .md reviews")
-    ap.add_argument("--model", default=DEFAULT_MODEL)
+    ap.add_argument("--model", default=None,
+                    help="OpenRouter model id (default: $OPENROUTER_MODEL or "
+                         "anthropic/claude-sonnet-4)")
     ap.add_argument("--top-moments", type=int, default=4)
     ap.add_argument("--top-infs", type=int, default=6)
     ap.add_argument("--overstay-gold", type=int, default=1000)
@@ -384,6 +386,9 @@ def main():
 
     riot_key = _require_env("RIOT_API_KEY")
     or_key = _require_env("OPENROUTER_API_KEY")
+
+    # Model: explicit --model flag > OPENROUTER_MODEL env > default.
+    model = args.model or os.environ.get("OPENROUTER_MODEL") or DEFAULT_MODEL
 
     # ---- resolve summoner (puuid) + match ids -----------------------------
     if args.match:
@@ -416,7 +421,7 @@ def main():
                             top_inflections=args.top_infs,
                             overstay_gold=args.overstay_gold,
                             range_units=args.range)
-        narrative = call_llm(ctx, or_key, model=args.model)
+        narrative = call_llm(ctx, or_key, model=model)
         review = render_review(ctx, narrative)
 
         print(review)

@@ -75,6 +75,37 @@ Detectors: overstay deaths, contested objectives (enemy secured it while you wer
 range), deaths at objectives, and power-spike gaps. This is the deterministic layer
 that feeds the coaching/LLM layer — see `VISION.md`.
 
+## AI coach (`coach.py`)
+
+Tie the deterministic pipeline to an LLM (OpenRouter) and get a grounded,
+natural-language review of a single game: overview, key points, deciding moments,
+a prioritized review plan, and "decisions you should have made."
+
+```bash
+export RIOT_API_KEY="..." OPENROUTER_API_KEY="sk-or-..."
+python coach.py --name YourSummoner --tag NA1 --region na1 --count 3
+```
+
+Output: markdown review per match, printed to stdout and saved to
+`./reviews/<match_id>.md`.
+
+### Environment
+
+| Var | Purpose |
+|---|---|
+| `RIOT_API_KEY` | Riot Games dev key (fetch matches) |
+| `OPENROUTER_API_KEY` | OpenRouter key — `sk-or-...` from https://openrouter.ai/keys |
+| `OPENROUTER_MODEL` | optional model id (default `anthropic/claude-sonnet-4`) |
+
+### Choosing a model
+
+- Default is `anthropic/claude-sonnet-4`.
+- Per-run override: `--model "openai/gpt-4o-mini"`.
+- Make it stick: set `OPENROUTER_MODEL` in `.env`.
+- Any OpenRouter id works — browse https://openrouter.ai/models (e.g.
+  `anthropic/claude-sonnet-4`, `openai/gpt-4o`, `deepseek/deepseek-chat`,
+  `google/gemini-2.5-pro`).
+
 ## Pro benchmark roster (`pros.json`)
 
 Fetch pro junglers' solo-queue games with the same script (they're on the live servers):
@@ -128,7 +159,7 @@ Each `data/<match_id>.json` contains:
 - [ ] Cloud subscription bot — poll subscribers' matches, diff new games, deliver session summaries
 - [ ] Pro solo-queue benchmarking — diff your profile against the `pros.json` roster
 - [ ] Champion archetype layer (farming-carry vs. utility vs. gank junglers)
-- [ ] LLM grounding layer — turn the JSON into a natural-language coaching review
+- [x] LLM grounding layer — turn the JSON into a natural-language coaching review
 - [ ] Output formats (markdown report / web UI)
 - [ ] Local companion app (later) — Replay API clip recording + live data guidance
 
