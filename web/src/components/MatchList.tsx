@@ -292,9 +292,11 @@ export default function MatchList({ matches }: { matches: Match[] }) {
             />
           ))}
         </div>
-        {selected && <ParticipantsPanel match={selected} />}
+        <div className="match-side">
+          {selected && <ReviewPanel match={selected} />}
+          {selected && <ParticipantsPanel match={selected} />}
+        </div>
       </div>
-      {selected && <ReviewPanel match={selected} />}
     </section>
   );
 }
