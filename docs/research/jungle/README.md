@@ -53,6 +53,18 @@ Status: ☐ planned · ◐ in progress · ☑ done (notes filed)
 - ☐ 12. Current jungle meta snapshot (dated): top champions, tier lists, and
       what the data says (re-verify per patch).
 
+## Tools
+
+- **`tools/fetch_page.py`** — 3-tier resilient fetcher (direct → r.jina.ai →
+  Playwright). **Use this for every web fetch in this study.** Plain `curl`
+  fails from this container; see
+  [`findings/00-environment-constraints.md`](findings/00-environment-constraints.md)
+  for the full access matrix (what works, what doesn't, and why).
+
+```bash
+python3 tools/fetch_page.py "<url>" --verbose     # inspect
+```
+
 ## Method notes
 
 - Run via the `deep-research` skill: scope → parallel axes → synthesis →
@@ -61,6 +73,9 @@ Status: ☐ planned · ◐ in progress · ☑ done (notes filed)
 - **Date every patch-dependent finding.** The meta drifts; mark freshness.
 - Prefer primary data (Riot/official stats, op.gg/u.gg/lolalytics aggregates,
   Riot dev communications) over opinion pieces; flag analyst opinion as such.
+- **Fetch through `tools/fetch_page.py`, never bare `curl`** — and check
+  `len(text)`; a small "success" on a stats page is usually a JS shell or a
+  bot-wall page served with HTTP 200.
 
 ## Relation to the product
 
