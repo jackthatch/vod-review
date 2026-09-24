@@ -622,3 +622,70 @@ h3 {
   padding: 48px 24px;
   color: var(--text-secondary);
 }
+
+/* ── AI review panel ─────────────────────────────────────── */
+
+.review-panel {
+  margin-top: 4px;
+}
+
+.review-panel__subtitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin: 20px 0 8px;
+  letter-spacing: 0.01em;
+}
+
+.review-panel__moments {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.moment-time {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.moment-type {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--link);
+  background: var(--win-bg);
+  border-radius: var(--r-pill);
+  padding: 2px 8px;
+}
+
+/* Minimal markdown (rendered from the LLM coach) */
+.markdown {
+  line-height: 1.55;
+  font-size: 15px;
+  color: var(--text);
+}
+.markdown h3 {
+  font-size: 17px;
+  margin: 20px 0 8px;
+}
+.markdown h4 {
+  font-size: 15px;
+  margin: 16px 0 6px;
+  color: var(--text-secondary);
+}
+.markdown p {
+  margin: 0 0 10px;
+}
+.markdown ul {
+  margin: 0 0 12px;
+  padding-left: 20px;
+  display: grid;
+  gap: 4px;
+}
+.markdown li {
+  margin: 0;
+}

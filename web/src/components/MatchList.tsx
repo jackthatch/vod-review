@@ -178,6 +178,88 @@ function ParticipantsPanel({ match }: { match: Match }) {
   );
 }
 
+function renderInline(text: string): React.ReactNode[] {
+  // Minimal **bold** support.
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
+// Tiny, safe markdown renderer (no dangerouslySetInnerHTML). Handles the
+// headings/bullets/bold the coach produces.
+function Markdown({ text }: { text: string }) {
+  const lines = text.split("\n");
+  const out: React.ReactNode[] = [];
+  let key = 0;
+  let bullets: string[] = [];
+
+  const flushBullets = () => {
+    if (bullets.length) {
+      out.push(
+        <ul key={`ul-${key++}`}>
+          {bullets.map((b, i) => (
+            <li key={i}>{renderInline(b)}</li>
+          ))}
+        </ul>,
+      );
+      bullets = [];
+    }
+  };
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (line.startsWith("### ")) {
+      flushBullets();
+      out.push(<h4 key={`h-${key++}`}>{renderInline(line.slice(4))}</h4>);
+    } else if (line.startsWith("## ")) {
+      flushBullets();
+      out.push(<h3 key={`h-${key++}`}>{renderInline(line.slice(3))}</h3>);
+    } else if (line.startsWith("- ") || line.startsWith("* ")) {
+      bullets.push(line.slice(2));
+    } else if (line === "") {
+      flushBullets();
+    } else {
+      flushBullets();
+      out.push(<p key={`p-${key++}`}>{renderInline(line)}</p>);
+    }
+  }
+  flushBullets();
+  return <div className="markdown">{out}</div>;
+}
+
+function ReviewPanel({ match }: { match: Match }) {
+  const moments = match.moments ?? [];
+  return (
+    <section className="card review-panel">
+      <h3 className="section-title">AI review</h3>
+      {match.summary ? (
+        <Markdown text={match.summary} />
+      ) : (
+        <p className="muted">
+          No AI review for this game yet (set an OpenRouter key to enable it).
+        </p>
+      )}
+      {moments.length > 0 && (
+        <>
+          <h4 className="review-panel__subtitle">Flagged moments</h4>
+          <ul className="review-panel__moments">
+            {moments.map((m, i) => (
+              <li key={i}>
+                <span className="moment-time">{m.min}min</span>{" "}
+                <span className="moment-type">{m.type}</span> — {m.detail}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
+  );
+}
+
 export default function MatchList({ matches }: { matches: Match[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(matches[0]?.id ?? null);
   const selected = matches.find((m) => m.id === selectedId) ?? matches[0];
@@ -212,6 +294,7 @@ export default function MatchList({ matches }: { matches: Match[] }) {
         </div>
         {selected && <ParticipantsPanel match={selected} />}
       </div>
+      {selected && <ReviewPanel match={selected} />}
     </section>
   );
 }

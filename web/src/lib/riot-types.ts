@@ -44,9 +44,21 @@ export interface RiotEvent {
   position?: Partial<RiotPosition>;
   victimId?: number;
   killerId?: number;
+  assistingParticipantIds?: number[];
   monsterType?: string;
   monsterSubType?: string;
   killerTeamId?: number;
+  buildingType?: string;
+  towerType?: string;
+  laneType?: string;
+  teamId?: number;
+  itemId?: number;
+  participantId?: number;
+  creatorId?: number;
+  wardType?: string;
+  level?: number;
+  skillSlot?: number;
+  killType?: string;
 }
 
 export interface RiotParticipant {
@@ -58,6 +70,8 @@ export interface RiotParticipant {
   individualPosition?: string;
   lane?: string;
   role?: string;
+  summoner1Id?: number;
+  summoner2Id?: number;
   win: boolean;
   kills: number;
   deaths: number;

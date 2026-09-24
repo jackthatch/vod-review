@@ -1,0 +1,276 @@
+// coach.ts — Layer 4: the AI coach (OpenRouter).
+//
+// Port of coach.py. Ties the deterministic pipeline (condense -> moments ->
+// board -> inflection) to an LLM and produces a grounded markdown review:
+// overview, key points, deciding moments, review plan, and better decisions.
+//
+// Every stat fed to the LLM is computed here from the Riot timeline; the LLM
+// only interprets, so it can't hallucinate a number.
+
+import type { Moment } from "@/lib/types";
+import type { Story } from "@/lib/condense";
+import { situationAt, type Board } from "@/lib/board";
+import { analyze as analyzeInflections } from "@/lib/inflection";
+import { analyze as analyzeMoments } from "@/lib/moments";
+
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const DEFAULT_MODEL = "anthropic/claude-sonnet-4";
+
+// --- context assembly ------------------------------------------------------
+
+function opponentId(board: Board): number | null {
+  const me = board.players[board.me_id];
+  for (const [pid, pl] of Object.entries(board.players)) {
+    if (pl.team !== me.team && pl.role === me.role) return Number(pid);
+  }
+  for (const [pid, pl] of Object.entries(board.players)) {
+    if (pl.team !== me.team && pl.has_smite) return Number(pid);
+  }
+  return null;
+}
+
+function levelCurve(
+  board: Board,
+  pid: number,
+  atMinutes: number[] = [10, 20],
+): Record<number, Record<string, number | null>> {
+  const out: Record<number, Record<string, number | null>> = {};
+  for (const t of atMinutes) {
+    let best: Board["snapshots"][number]["players"][number] | null = null;
+    for (const s of board.snapshots) {
+      if (s.min <= t) {
+        const ps = s.players[pid];
+        if (ps) best = ps;
+      } else break;
+    }
+    out[t] = best
+      ? { level: best.level, cs: best.cs, gold: best.gold, xp: best.xp }
+      : { level: null, cs: null, gold: null, xp: null };
+  }
+  return out;
+}
+
+function trimSituation(sit: ReturnType<typeof situationAt>) {
+  const players = (sit.players as Record<string, unknown>[])
+    .slice(0, 10)
+    .map((p) => {
+      const keep = [
+        "participant_id",
+        "champion",
+        "team",
+        "role",
+        "is_me",
+        "lane",
+        "gold",
+        "level",
+        "fed",
+        "has_tp",
+        "likely_dead",
+        "dist_baron",
+        "dist_dragon",
+      ];
+      const o: Record<string, unknown> = {};
+      for (const k of keep) if (k in p) o[k] = p[k];
+      return o;
+    });
+  return {
+    minute: sit.minute,
+    gold_diff: sit.gold_diff,
+    dragon_counts: sit.dragon_counts,
+    players,
+  };
+}
+
+export interface CoachContext {
+  match_id: string;
+  overview: Record<string, unknown>;
+  matchup: Record<string, unknown>;
+  objectives: Record<string, unknown>[];
+  deaths: Record<string, unknown>[];
+  pivotal_moments: Record<string, unknown>[];
+  inflections: Record<string, unknown>[];
+}
+
+export function buildContext(
+  story: Story,
+  board: Board,
+  topMoments = 4,
+  topInflections = 6,
+  opts: {
+    overstay_gold: number;
+    range_units: number;
+    window_sec: number;
+    gap_min: number;
+  } = { overstay_gold: 1000, range_units: 3000, window_sec: 30, gap_min: 6.0 },
+): CoachContext {
+  const meId = board.me_id;
+  const me = board.players[meId];
+  const oppId = opponentId(board);
+
+  const s = story.stats;
+  const dur = story.duration_min || 1.0;
+  const overview: Record<string, unknown> = {
+    champion: story.champion,
+    role: story.role,
+    result: story.win ? "win" : "loss",
+    duration_min: story.duration_min,
+    opponent: story.opponent_champion,
+    kda: `${s.kills}/${s.deaths}/${s.assists}`,
+    cs: s.total_cs,
+    cs_per_min: Math.round((s.total_cs / dur) * 10) / 10,
+    gold: s.gold,
+    gold_per_min: Math.round(s.gold / dur),
+    first_clear_min: story.first_clear_min,
+    kp: null,
+    champ_damage_ratio: null,
+  };
+
+  // kill participation: (my kills + assists) / team kills
+  let teamKills = 0;
+  for (const ev of board.events) {
+    if (ev.type === "CHAMPION_KILL" && ev.killer != null) {
+      const kteam = board.players[ev.killer]?.team;
+      if (kteam === me.team) teamKills++;
+    }
+  }
+  const myKp = s.kills + s.assists;
+  overview.kp = teamKills ? Math.round((100.0 * myKp) / teamKills) : null;
+
+  // farming-vs-fighting split from the last snapshot
+  const lastSnap = story.snapshots[story.snapshots.length - 1];
+  if (lastSnap) {
+    const td = lastSnap.total_damage ?? 0;
+    const tdc = lastSnap.damage_to_champions ?? 0;
+    overview.champ_damage_ratio = td ? Math.round((100.0 * tdc) / td) / 10 : null;
+  }
+
+  const matchup: Record<string, unknown> = {};
+  if (oppId != null) {
+    matchup.opponent_champion = board.players[oppId].champion;
+    matchup.me = levelCurve(board, meId);
+    matchup.opponent = levelCurve(board, oppId);
+  }
+
+  const objectives = story.objectives.map((o) => ({
+    min: o.min,
+    monster: o.type,
+    sub: o.sub,
+    team: o.team === me.team ? "mine" : "enemy",
+    smited_by_me: o.mine,
+  }));
+
+  const deaths = story.deaths.map((d) => ({
+    min: d.min,
+    gold_held: d.current_gold,
+  }));
+
+  const rankedMoments = analyzeMoments(story, opts);
+  const pivotalMoments = rankedMoments.slice(0, topMoments).map((m: Moment) => ({
+    min: m.min,
+    type: m.type,
+    detail: m.detail,
+    score: m.score,
+    situation: trimSituation(situationAt(board, m.min)),
+  }));
+
+  const inflections = analyzeInflections(board).slice(0, topInflections).map(
+    (ip: Moment) => ({
+      min: ip.min,
+      type: ip.type,
+      detail: ip.detail,
+      situation: trimSituation(situationAt(board, ip.min)),
+    }),
+  );
+
+  return {
+    match_id: board.match_id,
+    overview,
+    matchup,
+    objectives,
+    deaths,
+    pivotal_moments: pivotalMoments,
+    inflections,
+  };
+}
+
+// --- LLM -------------------------------------------------------------------
+
+const SYSTEM_PROMPT = `You are a high-ELO League of Legends coach reviewing a single
+solo-queue game from the perspective of the jungler (the "player"). You are given
+a deterministic fact-sheet computed from the Riot timeline — every number in it is
+accurate; never invent or contradict a number that is given to you. If a fact is
+missing (e.g. summoner cooldowns, exact wave state), hedge rather than assert.
+
+Your job is to write a concise, actionable review in Markdown with exactly these
+sections:
+
+## Game overview
+3-5 sentences: the shape of the game, who carried/inted, and the single most
+important narrative thread. Reference the player's KDA/CS/gold and the matchup.
+
+## Key points
+A short bullet list (4-6) of the highest-signal facts: first-clear speed,
+farming-vs-fighting split, level/gold vs. the enemy jungler, objective control,
+death timing. Each bullet states the fact AND why it mattered.
+
+## Deciding moments
+For each pivotal moment given, one short paragraph answering three questions:
+1. What happened (timestamp + event).
+2. Why it went the way it did (underleveled, unspent gold, out of position,
+   bad fight choice, or just a 50/50 that went the wrong way).
+3. The alternative — the better play the player should have made instead.
+
+## Review plan
+A prioritized list (top 3) of the specific moments to actually rewatch in the
+replay, in order of importance, each with a one-line "what to look for" and a
+one-line "why this matters to your long-term improvement".
+
+## Decisions to change
+A short list of the concrete decisions the player made that were wrong, each
+paired with the decision they should have made instead, phrased as
+"Instead of X, you should have Y."
+
+Be direct and specific. Use the player's champion name and the timestamps given.
+Do not pad. Total output should be under ~700 words.`;
+
+function buildUserPrompt(ctx: CoachContext): string {
+  return (
+    "Here is the deterministic fact-sheet for this game:\n\n" +
+    JSON.stringify(ctx, null, 2) +
+    "\n\nWrite the review now."
+  );
+}
+
+export async function generateSummary(
+  ctx: CoachContext,
+  apiKey: string,
+  model: string = DEFAULT_MODEL,
+): Promise<string> {
+  const res = await fetch(OPENROUTER_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: buildUserPrompt(ctx) },
+      ],
+      max_tokens: 1600,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`OpenRouter ${res.status}: ${body.slice(0, 300)}`);
+  }
+
+  const data = (await res.json()) as {
+    choices: { message: { content: string } }[];
+  };
+  return data.choices[0].message.content;
+}
+
+export { DEFAULT_MODEL, OPENROUTER_URL };

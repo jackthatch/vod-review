@@ -6,6 +6,8 @@ import type { Preferences } from "@/lib/types";
 import { Riot } from "@/lib/riot";
 import { condense, type Story } from "@/lib/condense";
 import { analyze } from "@/lib/moments";
+import { extractBoard } from "@/lib/board";
+import { buildContext, generateSummary } from "@/lib/coach";
 
 export async function savePreferences(input: Preferences) {
   const supabase = await createClient();
@@ -88,7 +90,11 @@ export async function signOut() {
 // Shape a condensed Story into the `matches` row the web app reads.
 // Mirrors match_payload() in poll_bot.py (id, champion, role, win,
 // duration_min, kda, moments, summary, detail).
-function matchPayload(story: Story, moments: ReturnType<typeof analyze>) {
+function matchPayload(
+  story: Story,
+  moments: ReturnType<typeof analyze>,
+  summary: string | null,
+) {
   const s = story.stats;
   return {
     id: story.match_id,
@@ -98,7 +104,7 @@ function matchPayload(story: Story, moments: ReturnType<typeof analyze>) {
     duration_min: story.duration_min,
     kda: `${s.kills}/${s.deaths}/${s.assists}`,
     moments, // jsonb — list of ranked moment dicts
-    summary: null, // LLM narrative comes later
+    summary, // LLM narrative (markdown)
     detail: story.detail, // jsonb — items, roster, cs/gold, queue
   };
 }
@@ -147,8 +153,12 @@ export async function fetchAndAnalyze(count = 3): Promise<{
     };
   }
 
+  // Optional: LLM summary. If missing, we still fetch + flag moments, just
+  // without the AI narrative.
+  const openRouterKey = process.env.OPENROUTER_API_KEY;
+
   // Cap the request small to stay inside serverless timeouts (each game = 2
-  // Riot calls).
+  // Riot calls + 1 optional LLM call).
   const capped = Math.max(1, Math.min(Math.floor(count), 5));
 
   const riot = new Riot(apiKey, region);
@@ -168,7 +178,26 @@ export async function fetchAndAnalyze(count = 3): Promise<{
         window_sec: prefs?.objective_window ?? 30,
         gap_min: prefs?.spike_gap_min ?? 6.0,
       });
-      payloads.push(matchPayload(story, moments));
+
+      // Generate the grounded AI review (best-effort: a failure here shouldn't
+      // drop the whole match — it just leaves the summary null).
+      let summary: string | null = null;
+      if (openRouterKey) {
+        try {
+          const board = extractBoard(match, tl, puuid);
+          const ctx = buildContext(story, board, 4, 6, {
+            overstay_gold: prefs?.overstay_gold ?? 1000,
+            range_units: prefs?.contest_range ?? 3000,
+            window_sec: prefs?.objective_window ?? 30,
+            gap_min: prefs?.spike_gap_min ?? 6.0,
+          });
+          summary = await generateSummary(ctx, openRouterKey);
+        } catch (e) {
+          console.error(`summary failed for ${mid}:`, e);
+        }
+      }
+
+      payloads.push(matchPayload(story, moments, summary));
     }
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Fetch failed" };
