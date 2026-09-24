@@ -164,14 +164,18 @@ export function buildContext(
     gold_held: d.current_gold,
   }));
 
-  const rankedMoments = analyzeMoments(story, opts);
-  const pivotalMoments = rankedMoments.slice(0, topMoments).map((m: Moment) => ({
-    min: m.min,
-    type: m.type,
-    detail: m.detail,
-    score: m.score,
-    situation: trimSituation(situationAt(board, m.min)),
-  }));
+  const rankedMoments = analyzeMoments(story, opts, board);
+  const pivotalMoments = rankedMoments.slice(0, topMoments).map((m: Moment) => {
+    const entry: Record<string, unknown> = {
+      min: m.min,
+      type: m.type,
+      detail: m.detail,
+      score: m.score,
+      situation: trimSituation(situationAt(board, m.min)),
+    };
+    if (m.contest) entry.contest = m.contest;
+    return entry;
+  });
 
   const inflections = analyzeInflections(board).slice(0, topInflections).map(
     (ip: Moment) => ({
@@ -229,6 +233,18 @@ one-line "why this matters to your long-term improvement".
 A short list of the concrete decisions the player made that were wrong, each
 paired with the decision they should have made instead, phrased as
 "Instead of X, you should have Y."
+
+For objective moments (contested_objective / objective_contest), use the
+'contest' block when present instead of raw distances. 'team_committed: false'
+means the team conceded (few allies at the pit) — that is often the CORRECT
+play, not a mistake, so do NOT flag it as an error by default. Judge it against
+context: a large gold deficit, allies dead, or a soul point you can't win all
+justify giving an objective up. Only call it a mistake when contesting was
+actually viable (numbers even/up AND you were in position), or when the team
+could have PREPPED better — shoving side waves first and setting up vision so
+the objective fight is winnable. If 'soul_point' is true, treat it as
+high-stakes. When you discuss wave/lane pressure, hedge: we infer it from player
+positions, not exact wave states.
 
 Be direct and specific. Use the player's champion name and the timestamps given.
 Do not pad. Total output should be under ~700 words.`;

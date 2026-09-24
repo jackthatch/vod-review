@@ -25,7 +25,7 @@ import argparse
 import json
 import math
 
-from board import monster_label
+from board import monster_label, contest_context
 
 
 def _dist(a, b):
@@ -68,8 +68,13 @@ def detect_overstays(match, threshold):
     return moments
 
 
-def detect_contested_objectives(match, range_units):
-    """Enemy team secured an objective while you were within `range_units`."""
+def detect_contested_objectives(match, range_units, board=None):
+    """Enemy team secured an objective while you were within `range_units`.
+
+    When a `board` is supplied, the moment is enriched with a contest context
+    (who was at the pit, who was alive, gold state, soul stakes) so we can tell
+    "we contested and lost" apart from "we conceded" — and say so in the detail.
+    """
     moments = []
     my_team = _my_team(match)
     for o in match.get("objectives", []):
@@ -81,17 +86,38 @@ def detect_contested_objectives(match, range_units):
         if not me:
             continue
         d = _dist(me, o)
-        if d is not None and d <= range_units:
-            moments.append({
-                "type": "contested_objective",
-                "min": o["min"],
-                "objective": o.get("type"),
-                "sub": o.get("sub"),
-                "distance": round(d),
-                "score": 3000 - d,  # closer = higher impact
-                "detail": (f"{monster_label(o.get('type'), o.get('sub'))} secured by "
-                           f"enemy at {o['min']}min while you were {round(d)} units away"),
-            })
+        if d is None or d > range_units:
+            continue
+
+        label = monster_label(o.get("type"), o.get("sub"))
+        contest = (contest_context(board, o.get("type"), o["min"], range_units)
+                   if board is not None else None)
+
+        if contest and not contest["team_committed"]:
+            detail = (f"{label} conceded to enemy at {o['min']}min — you were "
+                      f"{contest['me_proximity']} ({contest['me_dist']}u) but only "
+                      f"{contest['allies_near']} ally near vs "
+                      f"{contest['enemies_near']} enemies at the pit "
+                      f"(team not committed)")
+        elif contest:
+            detail = (f"{label} lost to enemy at {o['min']}min — contested "
+                      f"{contest['allies_near']}v{contest['enemies_near']} at the "
+                      f"pit, you were {contest['me_proximity']} "
+                      f"({contest['me_dist']}u)")
+        else:
+            detail = (f"{label} secured by enemy at {o['min']}min while you were "
+                      f"{round(d)} units away")
+
+        moments.append({
+            "type": "contested_objective",
+            "min": o["min"],
+            "objective": o.get("type"),
+            "sub": o.get("sub"),
+            "distance": round(d),
+            "contest": contest,
+            "score": 3000 - d,  # closer = higher impact
+            "detail": detail,
+        })
     return moments
 
 
@@ -167,10 +193,10 @@ def detect_power_spike_gaps(match, gap_min, spike_threshold=25):
 
 
 def analyze(match, overstay_gold=1000, range_units=3000, window_sec=30,
-            gap_min=6.0):
+            gap_min=6.0, board=None):
     moments = []
     moments += detect_overstays(match, overstay_gold)
-    moments += detect_contested_objectives(match, range_units)
+    moments += detect_contested_objectives(match, range_units, board)
     moments += detect_deaths_at_objective(match, window_sec)
     moments += detect_power_spike_gaps(match, gap_min)
 

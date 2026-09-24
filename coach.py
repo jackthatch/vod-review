@@ -193,17 +193,20 @@ def build_context(match, timeline, puuid, top_moments=4, top_inflections=6,
               for d in story["deaths"]]
 
     # -- pivotal moments (ranked) --------------------------------------
-    ranked_moments = moments_mod.analyze(story, overstay_gold, range_units, 30, 6.0)
+    ranked_moments = moments_mod.analyze(story, overstay_gold, range_units, 30, 6.0, bd)
     moments_out = []
     for m in ranked_moments[:top_moments]:
         # attach a full-board situation fact-sheet at each moment
-        moments_out.append({
+        entry = {
             "min": m["min"],
             "type": m["type"],
             "detail": m["detail"],
             "score": m["score"],
             "situation": _trim_situation(board_mod.situation_at(bd, m["min"])),
-        })
+        }
+        if m.get("contest"):
+            entry["contest"] = m["contest"]
+        moments_out.append(entry)
 
     # -- inflection points (decisions) ---------------------------------
     inflections = inflection_mod.analyze(bd)
@@ -282,6 +285,18 @@ one-line "why this matters to your long-term improvement".
 A short list of the concrete decisions the player made that were wrong, each
 paired with the decision they should have made instead, phrased as
 "Instead of X, you should have Y."
+
+For objective moments (contested_objective / objective_contest), use the
+`contest` block when present instead of raw distances. `team_committed: false`
+means the team conceded (few allies at the pit) — that is often the CORRECT
+play, not a mistake, so do NOT flag it as an error by default. Judge it against
+context: a large gold deficit, allies dead, or a soul point you can't win all
+justify giving an objective up. Only call it a mistake when contesting was
+actually viable (numbers even/up AND you were in position), or when the team
+could have PREPPED better — shoving side waves first and setting up vision so
+the objective fight is winnable. If `soul_point` is true, treat it as
+high-stakes. When you discuss wave/lane pressure, hedge: we infer it from player
+positions, not exact wave states.
 
 Be direct and specific. Use the player's champion name and the timestamps given.
 Do not pad. Total output should be under ~700 words."""

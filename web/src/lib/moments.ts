@@ -9,7 +9,7 @@
 
 import type { Moment } from "@/lib/types";
 import type { Story, Snapshot } from "@/lib/condense";
-import { monsterLabel } from "@/lib/board";
+import { contestContext, monsterLabel, type Board } from "@/lib/board";
 
 type AnalyzeOptions = {
   overstay_gold: number;
@@ -58,7 +58,11 @@ function detectOverstays(story: Story, threshold: number): Moment[] {
   return moments;
 }
 
-function detectContestedObjectives(story: Story, rangeUnits: number): Moment[] {
+function detectContestedObjectives(
+  story: Story,
+  rangeUnits: number,
+  board?: Board | null,
+): Moment[] {
   const moments: Moment[] = [];
   const myTeam = story.team_id;
   for (const o of story.objectives) {
@@ -67,17 +71,45 @@ function detectContestedObjectives(story: Story, rangeUnits: number): Moment[] {
     const me = snapAt(story.snapshots, o.min);
     if (!me) continue;
     const d = dist(me, o);
-    if (d != null && d <= rangeUnits) {
-      moments.push({
-        type: "contested_objective",
-        min: o.min,
-        objective: o.type,
-        sub: o.sub,
-        distance: Math.round(d),
-        score: 3000 - d, // closer = higher impact
-        detail: `${monsterLabel(o.type, o.sub)} secured by enemy at ${o.min}min while you were ${Math.round(d)} units away`,
-      });
+    if (d == null || d > rangeUnits) continue;
+
+    const label = monsterLabel(o.type, o.sub);
+    const contest = board
+      ? (contestContext(board, o.type, o.min, rangeUnits) as {
+          me_dist: number | null;
+          me_proximity: string;
+          allies_near: number;
+          enemies_near: number;
+          team_committed: boolean;
+        })
+      : null;
+
+    let detail: string;
+    if (contest && !contest.team_committed) {
+      detail =
+        `${label} conceded to enemy at ${o.min}min — you were ` +
+        `${contest.me_proximity} (${contest.me_dist}u) but only ` +
+        `${contest.allies_near} ally near vs ${contest.enemies_near} enemies ` +
+        `at the pit (team not committed)`;
+    } else if (contest) {
+      detail =
+        `${label} lost to enemy at ${o.min}min — contested ` +
+        `${contest.allies_near}v${contest.enemies_near} at the pit, you were ` +
+        `${contest.me_proximity} (${contest.me_dist}u)`;
+    } else {
+      detail = `${label} secured by enemy at ${o.min}min while you were ${Math.round(d)} units away`;
     }
+
+    moments.push({
+      type: "contested_objective",
+      min: o.min,
+      objective: o.type,
+      sub: o.sub,
+      distance: Math.round(d),
+      contest,
+      score: 3000 - d, // closer = higher impact
+      detail,
+    });
   }
   return moments;
 }
@@ -158,10 +190,14 @@ function detectPowerSpikeGaps(
   return moments;
 }
 
-export function analyze(story: Story, opts: AnalyzeOptions): Moment[] {
+export function analyze(
+  story: Story,
+  opts: AnalyzeOptions,
+  board?: Board | null,
+): Moment[] {
   const moments: Moment[] = [];
   moments.push(...detectOverstays(story, opts.overstay_gold));
-  moments.push(...detectContestedObjectives(story, opts.range_units));
+  moments.push(...detectContestedObjectives(story, opts.range_units, board));
   moments.push(...detectDeathsAtObjective(story, opts.window_sec));
   moments.push(...detectPowerSpikeGaps(story, opts.gap_min));
 

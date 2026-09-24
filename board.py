@@ -336,6 +336,99 @@ def situation_at(board, minute):
     }
 
 
+# --- objective contest context --------------------------------------------
+
+CONTEST_RADIUS = 3500  # map units — "near the pit" for presence counting
+
+
+def proximity_label(d):
+    """Human-friendly distance-to-objective bucket (replaces raw map units)."""
+    if d is None:
+        return "unknown"
+    if d <= 800:
+        return "in the pit"
+    if d <= 1500:
+        return "at the pit entrance"
+    if d <= 3000:
+        return "in the river nearby"
+    return "across the map"
+
+
+def contest_context(board, monster, minute, radius=CONTEST_RADIUS):
+    """Deterministic read of who was at the objective pit when it was taken.
+
+    Distinguishes "we contested and lost" from "we conceded" (few allies near),
+    and surfaces the stakes (gold diff, dragon soul point, who was alive) so the
+    coach can judge whether letting the objective go was actually correct.
+
+    All fields are computed from the board — nothing is guessed.
+    """
+    snap = _snap_at(board, minute)
+    players = board["players"]
+    me_id = board["me_id"]
+    me_team = players[me_id]["team"]
+    enemy_team = 300 - me_team
+    pit = OBJECTIVE_POS.get(monster)
+    deaths = _death_times(board)
+    game_min = board["duration_min"]
+
+    allies_near = enemies_near = 0
+    allies_alive = enemies_alive = 0
+    ally_lanes = []
+
+    for pid in sorted(players):
+        pl = players[pid]
+        ps = (snap["players"].get(pid) if snap else None) or {}
+        last_death = deaths.get(pid)
+        respawn = _respawn_estimate(ps.get("level") or 9, game_min) / 60.0
+        alive = last_death is None or (minute - last_death) >= respawn
+        if not alive:
+            continue
+        if pl["team"] == me_team:
+            allies_alive += 1
+            ally_lanes.append(_lane(ps.get("x"), ps.get("y")))
+        else:
+            enemies_alive += 1
+        d = _dist(ps, pit) if pit else None
+        if d is not None and d <= radius:
+            if pl["team"] == me_team:
+                allies_near += 1
+            else:
+                enemies_near += 1
+
+    my_ps = (snap["players"].get(me_id) if snap else None) or {}
+    me_dist = _dist(my_ps, pit) if pit else None
+
+    gold = {100: 0, 200: 0}
+    if snap:
+        for pid, ps in snap["players"].items():
+            gold[players[pid]["team"]] += ps.get("gold") or 0
+    gold_diff = gold.get(me_team, 0) - gold.get(enemy_team, 0)
+
+    # Dragon soul stakes: is this the enemy's 4th dragon (soul point)?
+    enemy_dragons = 0
+    for ev in board["events"]:
+        if (ev["type"] == "ELITE_MONSTER_KILL" and ev["min"] < minute
+                and ev.get("monster") == DRAGON and ev.get("team") == enemy_team):
+            enemy_dragons += 1
+    dragon_number = enemy_dragons + 1 if monster == DRAGON else None
+    soul_point = monster == DRAGON and enemy_dragons == 3
+
+    return {
+        "me_dist": round(me_dist) if me_dist is not None else None,
+        "me_proximity": proximity_label(me_dist),
+        "allies_near": allies_near,
+        "enemies_near": enemies_near,
+        "allies_alive": allies_alive,
+        "enemies_alive": enemies_alive,
+        "ally_lanes": ally_lanes,
+        "gold_diff": gold_diff,
+        "dragon_number": dragon_number,
+        "soul_point": soul_point,
+        "team_committed": allies_near >= 2,
+    }
+
+
 # --- CLI -------------------------------------------------------------------
 
 

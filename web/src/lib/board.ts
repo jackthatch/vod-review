@@ -391,3 +391,106 @@ export function situationAt(board: Board, minute: number): Situation {
     players: playerStatus,
   };
 }
+
+// --- objective contest context --------------------------------------------
+
+export const CONTEST_RADIUS = 3500;
+
+/** Human-friendly distance-to-objective bucket (replaces raw map units). */
+export function proximityLabel(d: number | null | undefined): string {
+  if (d == null) return "unknown";
+  if (d <= 800) return "in the pit";
+  if (d <= 1500) return "at the pit entrance";
+  if (d <= 3000) return "in the river nearby";
+  return "across the map";
+}
+
+/**
+ * Deterministic read of who was at the objective pit when it was taken.
+ * Distinguishes "we contested and lost" from "we conceded" and surfaces the
+ * stakes (gold diff, dragon soul point, who was alive).
+ */
+export function contestContext(
+  board: Board,
+  monster: string | null | undefined,
+  minute: number,
+  radius = CONTEST_RADIUS,
+): Record<string, unknown> {
+  const snap = snapAt(board, minute);
+  const players = board.players;
+  const meId = board.me_id;
+  const meTeam = players[meId].team;
+  const enemyTeam = 300 - meTeam;
+  const pit = monster ? OBJECTIVE_POS[monster] : undefined;
+  const deaths = deathTimes(board);
+  const gameMin = board.duration_min;
+
+  let alliesNear = 0;
+  let enemiesNear = 0;
+  let alliesAlive = 0;
+  let enemiesAlive = 0;
+  const allyLanes: string[] = [];
+
+  for (const pid of Object.keys(players)
+    .map(Number)
+    .sort((a, b) => a - b)) {
+    const pl = players[pid];
+    const ps =
+      (snap?.players[pid] as PlayerFrame | undefined) ?? ({} as PlayerFrame);
+    const lastDeath = deaths[pid];
+    const respawn = respawnEstimate(ps.level ?? 9, gameMin) / 60.0;
+    const alive = lastDeath == null || minute - lastDeath >= respawn;
+    if (!alive) continue;
+    if (pl.team === meTeam) {
+      alliesAlive++;
+      allyLanes.push(lane(ps.x, ps.y));
+    } else {
+      enemiesAlive++;
+    }
+    const d = pit ? dist(ps, pit) : null;
+    if (d != null && d <= radius) {
+      if (pl.team === meTeam) alliesNear++;
+      else enemiesNear++;
+    }
+  }
+
+  const myPs =
+    (snap?.players[meId] as PlayerFrame | undefined) ?? ({} as PlayerFrame);
+  const meDist = pit ? dist(myPs, pit) : null;
+
+  const gold: Record<number, number> = { 100: 0, 200: 0 };
+  if (snap) {
+    for (const [pid, ps] of Object.entries(snap.players)) {
+      gold[players[Number(pid)].team] += ps.gold ?? 0;
+    }
+  }
+  const goldDiff = (gold[meTeam] ?? 0) - (gold[enemyTeam] ?? 0);
+
+  let enemyDragons = 0;
+  for (const ev of board.events) {
+    if (
+      ev.type === "ELITE_MONSTER_KILL" &&
+      ev.min < minute &&
+      ev.monster === DRAGON &&
+      ev.team === enemyTeam
+    ) {
+      enemyDragons++;
+    }
+  }
+  const dragonNumber = monster === DRAGON ? enemyDragons + 1 : null;
+  const soulPoint = monster === DRAGON && enemyDragons === 3;
+
+  return {
+    me_dist: meDist != null ? Math.round(meDist) : null,
+    me_proximity: proximityLabel(meDist),
+    allies_near: alliesNear,
+    enemies_near: enemiesNear,
+    allies_alive: alliesAlive,
+    enemies_alive: enemiesAlive,
+    ally_lanes: allyLanes,
+    gold_diff: goldDiff,
+    dragon_number: dragonNumber,
+    soul_point: soulPoint,
+    team_committed: alliesNear >= 2,
+  };
+}

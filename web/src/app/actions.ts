@@ -178,18 +178,22 @@ export async function fetchAndAnalyze(count = 3): Promise<{
       const match = await riot.match(mid);
       const tl = await riot.timeline(mid);
       const story = condense(match, tl, puuid);
-      const moments = analyze(story, opts);
 
       // Deterministic coach fact-sheet (no LLM) — stored so the recap button
       // doesn't need to re-fetch Riot data later.
+      let board: ReturnType<typeof extractBoard> | null = null;
       let coachContext: ReturnType<typeof buildContext> | null = null;
       try {
-        const board = extractBoard(match, tl, puuid);
+        board = extractBoard(match, tl, puuid);
         coachContext = buildContext(story, board, 4, 6, opts);
       } catch (e) {
         console.error(`coach context failed for ${mid}:`, e);
         warnings.push(`Analysis context failed for one game.`);
       }
+
+      // Enrich moment detection with the full board (contest context for
+      // objectives: who was at the pit, soul stakes, etc.).
+      const moments = analyze(story, opts, board);
 
       payloads.push(matchPayload(story, moments, coachContext));
     }
