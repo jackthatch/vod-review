@@ -76,6 +76,78 @@ OBJECTIVE_POS = {
     ELDER: {"x": 9866, "y": 4414},
 }
 
+# Named Summoner's Rift landmarks (approximate map units, map 11). Blue side
+# sits bottom-left, red side top-right; the map is ~symmetric under a 180°
+# rotation. Used to give human-readable locations ("at your red buff") instead
+# of raw coordinates, which mean nothing to a player.
+LANDMARKS = [
+    ("fountain", 400, 400, "blue"),
+    ("blue buff", 3900, 7900, "blue"),
+    ("gromp", 2100, 8400, "blue"),
+    ("wolves", 3800, 6500, "blue"),
+    ("raptors", 7000, 5450, "blue"),
+    ("red buff", 7800, 4050, "blue"),
+    ("krugs", 8400, 2800, "blue"),
+    ("fountain", 14400, 14400, "red"),
+    ("blue buff", 10920, 6980, "red"),
+    ("gromp", 12720, 6480, "red"),
+    ("wolves", 11020, 8380, "red"),
+    ("raptors", 7820, 9430, "red"),
+    ("red buff", 7020, 10830, "red"),
+    ("krugs", 6420, 12080, "red"),
+    ("Baron pit", 4993, 10461, "neutral"),
+    ("Dragon pit", 9866, 4414, "neutral"),
+]
+
+# How close (map units) a point must be to a landmark to take its name.
+LANDMARK_RADIUS = 1700
+
+
+def _owner_prefix(owner, my_team):
+    if owner == "neutral" or my_team is None:
+        return ""
+    same = (owner == "blue" and my_team == 100) or (owner == "red" and my_team == 200)
+    return "your " if same else "enemy "
+
+
+def location_label(x, y, my_team=None):
+    """Human-readable map location for a point (e.g. 'at your red buff').
+
+    Returns None when we can't place it. Landmarks are approximate, so this is a
+    best-effort label, not a precise read.
+    """
+    if x is None or y is None:
+        return None
+
+    best = None
+    for name, lx, ly, owner in LANDMARKS:
+        d = math.hypot(x - lx, y - ly)
+        if best is None or d < best[0]:
+            best = (d, name, owner)
+    if best and best[0] <= LANDMARK_RADIUS:
+        _, name, owner = best
+        return f"at {_owner_prefix(owner, my_team)}{name}"
+
+    lane = _lane(x, y)
+    if lane == "top":
+        return "in top lane"
+    if lane == "bot":
+        return "in bot lane"
+    if lane == "mid":
+        return "in mid lane"
+    if lane == "base":
+        return "in your base" if my_team == 100 else "in the enemy base"
+    if lane == "enemy_base":
+        return "in your base" if my_team == 200 else "in the enemy base"
+    # jungle vs river: the river runs along the anti-diagonal
+    if abs(x + y - 14820) < 1600:
+        return "in the river"
+    my_half = {100: "blue", 200: "red"}.get(my_team)
+    half = "blue" if math.hypot(x - 400, y - 400) < math.hypot(x - 14400, y - 14400) else "red"
+    if my_half is None:
+        return f"in the {half} jungle"
+    return "in your jungle" if half == my_half else "in the enemy jungle"
+
 # --- extraction ------------------------------------------------------------
 
 
@@ -309,6 +381,8 @@ def situation_at(board, minute):
         last_death = death_times.get(pid)
         respawn = _respawn_estimate(lvl or 9, game_min) / 60.0
         likely_dead = (last_death is not None and (minute - last_death) < respawn)
+        d_baron = _dist({"x": x, "y": y}, OBJECTIVE_POS[BARON])
+        d_dragon = _dist({"x": x, "y": y}, OBJECTIVE_POS[DRAGON])
         player_status.append({
             "participant_id": pid,
             "champion": pl["champion"],
@@ -316,6 +390,7 @@ def situation_at(board, minute):
             "role": pl["role"],
             "is_me": pl["is_me"],
             "lane": _lane(x, y),
+            "location": location_label(x, y, me_team),
             "x": x, "y": y,
             "gold": ps.get("gold"),
             "level": lvl,
@@ -323,8 +398,8 @@ def situation_at(board, minute):
             "has_tp": pl["has_tp"],
             "likely_dead": likely_dead,
             "last_death_min": last_death,
-            "dist_baron": _dist({"x": x, "y": y}, OBJECTIVE_POS[BARON]),
-            "dist_dragon": _dist({"x": x, "y": y}, OBJECTIVE_POS[DRAGON]),
+            "near_baron": d_baron is not None and d_baron <= 3500,
+            "near_dragon": d_dragon is not None and d_dragon <= 3500,
         })
 
     return {
@@ -398,6 +473,7 @@ def contest_context(board, monster, minute, radius=CONTEST_RADIUS):
 
     my_ps = (snap["players"].get(me_id) if snap else None) or {}
     me_dist = _dist(my_ps, pit) if pit else None
+    me_location = location_label(my_ps.get("x"), my_ps.get("y"), me_team)
 
     gold = {100: 0, 200: 0}
     if snap:
@@ -415,7 +491,7 @@ def contest_context(board, monster, minute, radius=CONTEST_RADIUS):
     soul_point = monster == DRAGON and enemy_dragons == 3
 
     return {
-        "me_dist": round(me_dist) if me_dist is not None else None,
+        "me_location": me_location,
         "me_proximity": proximity_label(me_dist),
         "allies_near": allies_near,
         "enemies_near": enemies_near,

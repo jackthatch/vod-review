@@ -61,13 +61,14 @@ function trimSituation(sit: ReturnType<typeof situationAt>) {
         "role",
         "is_me",
         "lane",
+        "location",
         "gold",
         "level",
         "fed",
         "has_tp",
         "likely_dead",
-        "dist_baron",
-        "dist_dragon",
+        "near_baron",
+        "near_dragon",
       ];
       const o: Record<string, unknown> = {};
       for (const k of keep) if (k in p) o[k] = p[k];
@@ -204,6 +205,8 @@ solo-queue game from the perspective of the jungler (the "player"). You are give
 a deterministic fact-sheet computed from the Riot timeline — every number in it is
 accurate; never invent or contradict a number that is given to you. If a fact is
 missing (e.g. summoner cooldowns, exact wave state), hedge rather than assert.
+Never quote raw map coordinates or distances (no "units", no x/y) — refer to
+places by name: "mid lane", "your red buff", "at Dragon pit", "in the river".
 
 Your job is to write a concise, actionable review in Markdown with exactly these
 sections:

@@ -68,6 +68,68 @@ export const OBJECTIVE_POS: Record<string, { x: number; y: number }> = {
   [ELDER]: { x: 9866, y: 4414 },
 };
 
+// Named Summoner's Rift landmarks (approximate map units). Blue side bottom-left,
+// red side top-right. Used for human-readable locations instead of raw coords.
+const LANDMARKS: [string, number, number, string][] = [
+  ["fountain", 400, 400, "blue"],
+  ["blue buff", 3900, 7900, "blue"],
+  ["gromp", 2100, 8400, "blue"],
+  ["wolves", 3800, 6500, "blue"],
+  ["raptors", 7000, 5450, "blue"],
+  ["red buff", 7800, 4050, "blue"],
+  ["krugs", 8400, 2800, "blue"],
+  ["fountain", 14400, 14400, "red"],
+  ["blue buff", 10920, 6980, "red"],
+  ["gromp", 12720, 6480, "red"],
+  ["wolves", 11020, 8380, "red"],
+  ["raptors", 7820, 9430, "red"],
+  ["red buff", 7020, 10830, "red"],
+  ["krugs", 6420, 12080, "red"],
+  ["Baron pit", 4993, 10461, "neutral"],
+  ["Dragon pit", 9866, 4414, "neutral"],
+];
+const LANDMARK_RADIUS = 1700;
+
+function ownerPrefix(owner: string, myTeam: number | null | undefined): string {
+  if (owner === "neutral" || myTeam == null) return "";
+  const same =
+    (owner === "blue" && myTeam === 100) || (owner === "red" && myTeam === 200);
+  return same ? "your " : "enemy ";
+}
+
+/** Human-readable map location for a point (e.g. "at your red buff"), or null. */
+export function locationLabel(
+  x: number | null | undefined,
+  y: number | null | undefined,
+  myTeam: number | null = null,
+): string | null {
+  if (x == null || y == null) return null;
+
+  let best: [number, string, string] | null = null;
+  for (const [name, lx, ly, owner] of LANDMARKS) {
+    const d = Math.hypot(x - lx, y - ly);
+    if (!best || d < best[0]) best = [d, name, owner];
+  }
+  if (best && best[0] <= LANDMARK_RADIUS) {
+    return `at ${ownerPrefix(best[2], myTeam)}${best[1]}`;
+  }
+
+  const l = lane(x, y);
+  if (l === "top") return "in top lane";
+  if (l === "bot") return "in bot lane";
+  if (l === "mid") return "in mid lane";
+  if (l === "base") return myTeam === 100 ? "in your base" : "in the enemy base";
+  if (l === "enemy_base") return myTeam === 200 ? "in your base" : "in the enemy base";
+  if (Math.abs(x + y - 14820) < 1600) return "in the river";
+  const myHalf = myTeam === 100 ? "blue" : myTeam === 200 ? "red" : null;
+  const half =
+    Math.hypot(x - 400, y - 400) < Math.hypot(x - 14400, y - 14400)
+      ? "blue"
+      : "red";
+  if (myHalf == null) return `in the ${half} jungle`;
+  return half === myHalf ? "in your jungle" : "in the enemy jungle";
+}
+
 // --- types -----------------------------------------------------------------
 
 export interface BoardEvent {
@@ -363,6 +425,8 @@ export function situationAt(board: Board, minute: number): Situation {
     const respawn = respawnEstimate(lvl ?? 9, gameMin) / 60.0;
     const likelyDead =
       lastDeath != null && minute - lastDeath < respawn;
+    const dBar = dist({ x, y }, OBJECTIVE_POS[BARON]);
+    const dDra = dist({ x, y }, OBJECTIVE_POS[DRAGON]);
     playerStatus.push({
       participant_id: pid,
       champion: pl.champion,
@@ -370,6 +434,7 @@ export function situationAt(board: Board, minute: number): Situation {
       role: pl.role,
       is_me: pl.is_me,
       lane: lane(x, y),
+      location: locationLabel(x, y, meTeam),
       x,
       y,
       gold: ps.gold,
@@ -378,8 +443,8 @@ export function situationAt(board: Board, minute: number): Situation {
       has_tp: pl.has_tp,
       likely_dead: likelyDead,
       last_death_min: lastDeath ?? null,
-      dist_baron: dist({ x, y }, OBJECTIVE_POS[BARON]),
-      dist_dragon: dist({ x, y }, OBJECTIVE_POS[DRAGON]),
+      near_baron: dBar != null && dBar <= 3500,
+      near_dragon: dDra != null && dDra <= 3500,
     });
   }
 
@@ -481,7 +546,7 @@ export function contestContext(
   const soulPoint = monster === DRAGON && enemyDragons === 3;
 
   return {
-    me_dist: meDist != null ? Math.round(meDist) : null,
+    me_location: locationLabel(myPs.x, myPs.y, meTeam),
     me_proximity: proximityLabel(meDist),
     allies_near: alliesNear,
     enemies_near: enemiesNear,

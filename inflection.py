@@ -125,10 +125,8 @@ def detect_rotations(board, me_id=None, min_dist=5000):
                         "min": s["min"],
                         "from": from_lane,
                         "to": to_lane,
-                        "distance": round(d),
                         "score": 800,
-                        "detail": (f"rotated {from_lane} -> {to_lane} at {s['min']}min "
-                                   f"({round(d)} units)"),
+                        "detail": f"rotated {from_lane} -> {to_lane} at {s['min']}min",
                     })
         prev = ps
     return inflections

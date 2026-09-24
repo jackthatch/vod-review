@@ -93,27 +93,24 @@ def detect_contested_objectives(match, range_units, board=None):
         contest = (contest_context(board, o.get("type"), o["min"], range_units)
                    if board is not None else None)
 
+        where = (contest["me_location"] or contest["me_proximity"]) if contest else None
         if contest and not contest["team_committed"]:
             detail = (f"{label} conceded to enemy at {o['min']}min — you were "
-                      f"{contest['me_proximity']} ({contest['me_dist']}u) but only "
-                      f"{contest['allies_near']} ally near vs "
+                      f"{where}; only {contest['allies_near']} ally near vs "
                       f"{contest['enemies_near']} enemies at the pit "
                       f"(team not committed)")
         elif contest:
             detail = (f"{label} lost to enemy at {o['min']}min — contested "
-                      f"{contest['allies_near']}v{contest['enemies_near']} at the "
-                      f"pit, you were {contest['me_proximity']} "
-                      f"({contest['me_dist']}u)")
+                      f"{contest['allies_near']}v{contest['enemies_near']} at the pit"
+                      + (f", you were {where}" if where else ""))
         else:
-            detail = (f"{label} secured by enemy at {o['min']}min while you were "
-                      f"{round(d)} units away")
+            detail = f"{label} secured by enemy at {o['min']}min"
 
         moments.append({
             "type": "contested_objective",
             "min": o["min"],
             "objective": o.get("type"),
             "sub": o.get("sub"),
-            "distance": round(d),
             "contest": contest,
             "score": 3000 - d,  # closer = higher impact
             "detail": detail,

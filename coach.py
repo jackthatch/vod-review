@@ -237,8 +237,8 @@ def _trim_situation(sit, max_players=10):
     for p in sit.get("players", [])[:max_players]:
         players.append({k: p[k] for k in
                         ("participant_id", "champion", "team", "role", "is_me",
-                         "lane", "gold", "level", "fed", "has_tp", "likely_dead",
-                         "dist_baron", "dist_dragon") if k in p})
+                         "lane", "location", "gold", "level", "fed", "has_tp",
+                         "likely_dead", "near_baron", "near_dragon") if k in p})
     return {
         "minute": sit.get("minute"),
         "gold_diff": sit.get("gold_diff"),
@@ -256,6 +256,8 @@ solo-queue game from the perspective of the jungler (the "player"). You are give
 a deterministic fact-sheet computed from the Riot timeline — every number in it is
 accurate; never invent or contradict a number that is given to you. If a fact is
 missing (e.g. summoner cooldowns, exact wave state), hedge rather than assert.
+Never quote raw map coordinates or distances (no "units", no x/y) — refer to
+places by name: "mid lane", "your red buff", "at Dragon pit", "in the river".
 
 Your job is to write a concise, actionable review in Markdown with exactly these
 sections:

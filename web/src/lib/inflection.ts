@@ -94,9 +94,8 @@ function detectRotations(board: Board, meId: number | null, minDist = 5000): Mom
             min: s.min,
             from: fromLane,
             to: toLane,
-            distance: Math.round(d),
             score: 800,
-            detail: `rotated ${fromLane} -> ${toLane} at ${s.min}min (${Math.round(d)} units)`,
+            detail: `rotated ${fromLane} -> ${toLane} at ${s.min}min`,
           });
         }
       }

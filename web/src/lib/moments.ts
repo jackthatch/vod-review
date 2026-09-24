@@ -76,7 +76,7 @@ function detectContestedObjectives(
     const label = monsterLabel(o.type, o.sub);
     const contest = board
       ? (contestContext(board, o.type, o.min, rangeUnits) as {
-          me_dist: number | null;
+          me_location: string | null;
           me_proximity: string;
           allies_near: number;
           enemies_near: number;
@@ -84,20 +84,20 @@ function detectContestedObjectives(
         })
       : null;
 
+    const where = contest ? (contest.me_location ?? contest.me_proximity) : null;
     let detail: string;
     if (contest && !contest.team_committed) {
       detail =
-        `${label} conceded to enemy at ${o.min}min — you were ` +
-        `${contest.me_proximity} (${contest.me_dist}u) but only ` +
-        `${contest.allies_near} ally near vs ${contest.enemies_near} enemies ` +
+        `${label} conceded to enemy at ${o.min}min — you were ${where}; ` +
+        `only ${contest.allies_near} ally near vs ${contest.enemies_near} enemies ` +
         `at the pit (team not committed)`;
     } else if (contest) {
       detail =
         `${label} lost to enemy at ${o.min}min — contested ` +
-        `${contest.allies_near}v${contest.enemies_near} at the pit, you were ` +
-        `${contest.me_proximity} (${contest.me_dist}u)`;
+        `${contest.allies_near}v${contest.enemies_near} at the pit` +
+        (where ? `, you were ${where}` : "");
     } else {
-      detail = `${label} secured by enemy at ${o.min}min while you were ${Math.round(d)} units away`;
+      detail = `${label} secured by enemy at ${o.min}min`;
     }
 
     moments.push({
@@ -105,7 +105,6 @@ function detectContestedObjectives(
       min: o.min,
       objective: o.type,
       sub: o.sub,
-      distance: Math.round(d),
       contest,
       score: 3000 - d, // closer = higher impact
       detail,
