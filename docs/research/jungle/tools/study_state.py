@@ -36,10 +36,14 @@ STUDY_DIR = os.path.dirname(HERE)              # docs/research/jungle
 FINDINGS = os.path.join(STUDY_DIR, "findings")
 MAX_BATCH = 3                                   # Hermes concurrency cap
 
-# Axes 1-3 were produced by run 1, where sub-agents hit their iteration cap
-# BEFORE writing their files; the content was salvaged from returned summaries.
-# It is sourced but unverified -> force a real pass in the one-shot run.
-PROVISIONAL = {1, 2, 3}
+# One-time run-1 artifact: axes 1-3 were originally salvaged from sub-agent
+# summaries rather than written by the agents. The one-shot run rewrote all
+# three properly (2026-09-24), so this set is now empty. Kept as a mechanism:
+# add an axis number here to force it to be re-researched.
+#
+# ORCHESTRATOR-OWNED. Sub-agents must NOT edit this file or the README — doing
+# so races against sibling agents. See ONE-SHOT-RUN.md §6.
+PROVISIONAL: set[int] = set()
 
 
 @dataclass(frozen=True)

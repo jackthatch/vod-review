@@ -27,33 +27,39 @@ is grounded in evidence, not just expertise.
 
 Status: ☐ planned · ◐ in progress · ☑ done (notes filed)
 
+**All 12 axes complete as of Run 2 (2026-09-24).** Axis 12 is perishable — re-run
+it each patch (`study_state.py goal 12`).
+
 ### Win/loss mechanics
-- ◐ 1. How games are actually decided in solo queue (win conditions; snowball vs
+- ☑ 1. How games are actually decided in solo queue (win conditions; snowball vs
       coin-flip; the relative weight of early vs late game). → [`findings/01`](findings/01-how-games-are-decided.md)
-- ◐ 2. Causal impact of jungle play on win rate (what jungle behaviours
+- ☑ 2. Causal impact of jungle play on win rate (what jungle behaviours
       correlate most with winning — data from stat sites/analysts). → [`findings/02`](findings/02-jungle-impact-on-winrate.md)
-- ◐ 3. Objective value: drakes (incl. soul), Voidgrubs, Herald, Baron, Atakhan —
-      measured win-rate impact and correct prioritisation. → [`findings/03`](findings/03-objective-value.md)
+- ☑ 3. Objective value: drakes (incl. soul), Voidgrubs, Herald, Baron — measured
+      win-rate impact and correct prioritisation. → [`findings/03`](findings/03-objective-value.md)
 
 ### Jungle macro
-- ☐ 4. Tempo & pathing theory (advanced clear/route theory; tempo as win driver).
-- ☐ 5. Gank theory: when ganks convert, which lanes, expected value.
-- ☐ 6. Vision & information advantage in the jungle; ward economy.
-- ☐ 7. Counter-jungling, invades, and vertical jungling — risk/reward.
+- ☑ 4. Tempo & pathing theory (advanced clear/route theory; tempo as win driver). → [`findings/04`](findings/04-tempo-and-pathing.md)
+- ☑ 5. Gank theory: when ganks convert, which lanes, expected value. → [`findings/05`](findings/05-gank-theory.md)
+- ☑ 6. Vision & information advantage in the jungle; ward economy. → [`findings/06`](findings/06-vision-and-information.md)
+- ☑ 7. Counter-jungling, invades, and vertical jungling — risk/reward. → [`findings/07`](findings/07-counterjungling-invades.md)
 
 ### Archetype & champion
-- ☐ 8. Win-rate drivers per jungle archetype (carry vs gank vs tank) — what
-      separates good from great players on each.
-- ☐ 9. Champion-pool effects on win rate; one-trick vs flexible pools.
+- ☑ 8. Win-rate drivers per jungle archetype (carry vs gank vs tank) — what
+      separates good from great players on each. → [`findings/08`](findings/08-archetype-winrate-drivers.md)
+- ☑ 9. Champion-pool effects on win rate; one-trick vs flexible pools. → [`findings/09`](findings/09-champion-pool-effects.md)
 
 ### Improvement & review
-- ☐ 10. What actually improves solo-queue players fastest (review methods,
-      coaching evidence, deliberate practice).
-- ☐ 11. Rank-tier leak distribution — which mistakes concentrate at which ranks.
+- ☑ 10. What actually improves solo-queue players fastest (review methods,
+      coaching evidence, deliberate practice). → [`findings/10`](findings/10-how-players-improve.md)
+- ☑ 11. Rank-tier leak distribution — which mistakes concentrate at which ranks. → [`findings/11`](findings/11-rank-leak-distribution.md)
 
 ### Meta & data
-- ☐ 12. Current jungle meta snapshot (dated): top champions, tier lists, and
-      what the data says (re-verify per patch).
+- ☑ 12. Current jungle meta snapshot (dated): top champions, tier lists, and
+      what the data says. **PERISHABLE — re-verify per patch.** → [`findings/12`](findings/12-meta-snapshot.md)
+
+**Synthesis:** consolidated findings and the coach-design implications live in
+[`jungle-study.md`](jungle-study.md) §Run 2.
 
 ## Tools
 

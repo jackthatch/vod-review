@@ -60,7 +60,10 @@ drop them.
 > 5. **Budget your iterations.** Aim to have the file written within your first
 >    ~60% of tool calls; refine after. A partial written file beats a perfect
 >    unwritten one.
-> 6. Finish with a short summary: what you found, confidence, and any gaps.
+> 6. **Touch ONLY your findings file.** Do not edit `tools/study_state.py`,
+>    `README.md`, or any other axis's findings file — the orchestrator owns all
+>    shared state (sibling agents run concurrently; edits race and corrupt it).
+> 7. Finish with a short summary: what you found, confidence, and any gaps.
 >
 > **Toolsets:** `web`, `terminal`, `file`, `browser`, `search`.
 > **Language:** English.
