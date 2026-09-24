@@ -240,7 +240,8 @@ function ReviewPanel({ match }: { match: Match }) {
         <Markdown text={match.summary} />
       ) : (
         <p className="muted">
-          No AI review for this game yet (set an OpenRouter key to enable it).
+          No AI review for this game yet — click &ldquo;Fetch latest games&rdquo;
+          to generate it.
         </p>
       )}
       {moments.length > 0 && (

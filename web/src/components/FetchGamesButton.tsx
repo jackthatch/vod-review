@@ -16,7 +16,11 @@ export default function FetchGamesButton() {
         setMessage(res.error);
       } else {
         const n = res.count ?? 0;
-        setMessage(n > 0 ? `Fetched ${n} game${n === 1 ? "" : "s"}.` : "No new games.");
+        const parts = [
+          n > 0 ? `Fetched ${n} game${n === 1 ? "" : "s"}.` : "No new games.",
+          ...(res.warnings ?? []),
+        ];
+        setMessage(parts.join(" "));
         router.refresh(); // re-run the dashboard server component
       }
     });
@@ -28,7 +32,10 @@ export default function FetchGamesButton() {
         {pending ? "Fetching…" : "Fetch latest games"}
       </button>
       {message && (
-        <span className="muted" style={{ fontSize: 13 }}>
+        <span
+          className="muted"
+          style={{ fontSize: 13, color: "var(--loss)", maxWidth: 520 }}
+        >
           {message}
         </span>
       )}

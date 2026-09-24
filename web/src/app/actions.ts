@@ -116,6 +116,7 @@ function matchPayload(
 export async function fetchAndAnalyze(count = 3): Promise<{
   error?: string;
   count?: number;
+  warnings?: string[];
 }> {
   const supabase = await createClient();
   const {
@@ -162,6 +163,7 @@ export async function fetchAndAnalyze(count = 3): Promise<{
   const capped = Math.max(1, Math.min(Math.floor(count), 5));
 
   const riot = new Riot(apiKey, region);
+  const warnings: string[] = [];
   let payloads: ReturnType<typeof matchPayload>[];
   try {
     const puuid = await riot.puuid(name, tag);
@@ -193,8 +195,12 @@ export async function fetchAndAnalyze(count = 3): Promise<{
           });
           summary = await generateSummary(ctx, openRouterKey);
         } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
           console.error(`summary failed for ${mid}:`, e);
+          warnings.push(`AI review failed for one game: ${msg}`);
         }
+      } else if (warnings.length === 0) {
+        warnings.push("OPENROUTER_API_KEY not set — games saved without an AI review.");
       }
 
       payloads.push(matchPayload(story, moments, summary));
@@ -212,6 +218,9 @@ export async function fetchAndAnalyze(count = 3): Promise<{
   }
 
   revalidatePath("/dashboard");
-  return { count: payloads.length };
+  return {
+    count: payloads.length,
+    warnings: warnings.length ? warnings : undefined,
+  };
 }
 
