@@ -232,6 +232,22 @@ function Markdown({ text }: { text: string }) {
   return <div className="markdown">{out}</div>;
 }
 
+function Spinner({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      className="spinner"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      role="status"
+      aria-label="Loading"
+    >
+      <circle className="spinner__track" cx="12" cy="12" r="10" />
+      <circle className="spinner__head" cx="12" cy="12" r="10" />
+    </svg>
+  );
+}
+
 function ReviewPanel({ match }: { match: Match }) {
   // State is initialized from the server-provided recap and reset on match
   // change via `key={match.id}` on the parent (remounts the component).
@@ -261,18 +277,37 @@ function ReviewPanel({ match }: { match: Match }) {
             onClick={onGenerate}
             disabled={pending}
           >
-            {pending ? "Generating…" : "Get AI recap"}
+            {pending ? (
+              <>
+                <Spinner size={14} /> Generating…
+              </>
+            ) : (
+              "Get AI recap"
+            )}
           </button>
         )}
       </div>
 
+      {pending && (
+        <div
+          className="progress"
+          role="progressbar"
+          aria-label="Generating recap"
+        >
+          <div className="progress__bar" />
+        </div>
+      )}
+
       {summary ? (
         <Markdown text={summary} />
+      ) : pending ? (
+        <div className="recap-loading">
+          <Spinner size={20} />
+          <span className="muted">Analyzing this game… usually 10–20s.</span>
+        </div>
       ) : (
         <p className="muted">
-          {pending
-            ? "Analyzing this game…"
-            : "Generate an AI recap for this game. It's saved once generated."}
+          Generate an AI recap for this game. It&rsquo;s saved once generated.
         </p>
       )}
 
