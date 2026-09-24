@@ -121,6 +121,69 @@ not whether it's ready) and **exact wave state**. *(Corrects an earlier note:
 
 ---
 
+## Champion select & team-comp analysis (next feature idea)
+
+*Status: idea — partly feasible now, one hard blocker (pick order) documented
+below so we don't design around a hole.*
+
+A second feedback axis, orthogonal to the per-game VOD review: help the player
+understand **drafting and matchups**, not just in-game decisions. Three related
+ideas, with very different feasibility:
+
+### 1. Team-comp analyzer (deterministic — doable now)
+
+The full 10-player roster is already in `detail.participants` (champion + role).
+With Data Dragon's `champion.json` (per-champion `tags` + `stats.attackrange`) we
+can classify a comp deterministically: ranged vs melee, front-line/engage
+presence, waveclear, magic vs physical damage split, hard-CC count.
+
+Concrete output: *"Graves into 5 ranged"* — your team has no front line and no
+engage, so the enemy kites you to death. Flag it as a **comp-diff** so the player
+knows the loss was partly structural, not pure execution. Same "detection is
+deterministic" principle, applied to the draft instead of the game.
+
+### 2. Counterplay / matchup advice (LLM — doable now, extend the coach)
+
+The coach already receives the full roster. Add a matchup-aware section to the
+prompt: for your champion vs. your jungle counterpart (and the 1–2 enemy carries),
+give concrete micro advice — e.g. *Graves into Sylas: E sideways to dodge E2
+(the chains), hold W to space him off melee range, don't let him farm passive
+autos off you.* The LLM has this champion knowledge; we just pass the matchup
+pairs as grounded context (same pattern as `situationAt`).
+
+### 3. Pick-order analysis (the hard part — likely NOT possible)
+
+"Did I blind-pick Graves into a counter?" requires knowing *when* in the draft
+each champion was locked. **MATCH-V5 does not expose pick order** — we get the
+final comp and `info.teams[].bans`, but not the draft sequence. The Live Client
+Data API exposes champ-select *live* (`/lol-champ-select/v1/session`) but only
+during the draft, not post-game. Replay `.rofl` files may contain it but are
+version-locked and not worth parsing.
+
+Honest scope: we can analyze the **resulting comp** (ideas 1–2), but not **when
+a pick happened**. Any "you should have picked X instead" advice would be guessing
+at the draft sequence — don't ship that unless a draft-order source appears.
+
+### Data reality for this axis
+
+| Fact | Available? |
+|---|---|
+| Final team comp (10 champs + roles) | ✅ `detail.participants` |
+| Bans (per team, in order) | ✅ `info.teams[].bans` (ranked queues) |
+| Champion range/tags/role | ✅ Data Dragon `champion.json` `tags` + `stats.attackrange` |
+| Pick/draft order (who locked when) | ❌ not in MATCH-V5 |
+| Live champ-select state | ⚠️ Live Client Data API only, during draft |
+
+### Where it slots in
+
+A **pre-game / draft lens** layered on the same pipeline. Either a standalone
+"matchup difficulty" line per game on the dashboard, or a separate draft analyzer
+that ingests a (hypothetical or real) comp and scores it. Lower lift than the
+coach layer: idea 1 is a Data Dragon lookup + a classifier, idea 2 is a prompt
+extension.
+
+---
+
 ## Architecture decision: cloud-first, local companion later
 
 **Decision (2026-09):** ship the cloud service first, add a local companion app only
