@@ -6,6 +6,31 @@ aspirational — not everything here is built. It exists so that incremental wor
 
 ---
 
+## Mission: a jungle improvement platform
+
+vod-review is, at its core, an **improvement platform for League of Legends
+junglers**. The loop it exists to compress is: *play a game → immediately see the
+2–3 things that actually mattered and what the better decision looked like →
+carry one concrete lesson into the next game.* Not a stats page — a feedback loop.
+
+We are deliberately **jungle-first**. The role is the most decision-dense and
+least-served in solo queue, and a leak caught as a jungler compounds across the
+whole map. Building this depth for all five roles at once would water it down, so
+the roadmap stays on jungle until the review quality is genuinely expert-level,
+then widens.
+
+**The domain knowledge lives in [`docs/jungle-playbook.md`](docs/jungle-playbook.md)**
+— role fundamentals, playstyle archetypes, champion buckets, decision frameworks,
+and the recurring leaks. Every detection / benchmark / coaching idea in this
+vision should trace back to a concept in that playbook. Its **§8 maps each
+concept to a candidate Riot API signal**; the next step is to validate those
+against real timelines.
+
+The arc: **per-game review (today) → cross-game trend & leak detection → role
+benchmark & comparison (radar profile) → the draft/comp lens.**
+
+---
+
 ## The core problem
 
 A 30–40 minute League game usually comes down to a **handful of moments**: a lost
@@ -181,6 +206,37 @@ A **pre-game / draft lens** layered on the same pipeline. Either a standalone
 that ingests a (hypothetical or real) comp and scores it. Lower lift than the
 coach layer: idea 1 is a Data Dragon lookup + a classifier, idea 2 is a prompt
 extension.
+
+---
+
+## Comparison tool & radar profile (roadmap)
+
+A self-serve stats view: pull any account and see the key jungler metrics as a
+**radar ("spider web") chart** — the at-a-glance "where am I strong, where am I
+leaking" view.
+
+- **Scope:** a single champion (e.g. all of their Graves games) or across all
+  champions.
+- **Window:** average over the whole history, or the **last 10 / 20 / 50** games
+  (recent form vs. lifetime).
+- **Metrics (radar axes):** CS/min, kill participation, first-clear speed,
+  deaths/10min, objective/smite rate, gold/min, vision, damage share,
+  counter-jungle rate. The playbook §5 defines which metrics matter per
+  *archetype*.
+- **The benchmark overlay is the whole point.** An absolute number is meaningless
+  without archetype context — a 6.5 CS/min Graves and a 6.5 CS/min Sejuani mean
+  opposite things. The radar should plot the player **against a reference** (a
+  pro solo-queue sample, or the archetype average) so the shape shows the gap
+  directly.
+- **Normalization:** each axis scaled 0–100 (percentile vs. the reference
+  population, or min–max vs. a target band) so wildly different units share one
+  chart. A normalized 0–100 spider chart is exactly the target pattern.
+- **Implementation:** same match-v5 + Data Dragon pipeline; render with a small
+  SVG radar (no heavy chart dependency). Aggregation is deterministic; the LLM can
+  optionally narrate the biggest gaps.
+
+This mostly reuses metrics the trend-profile / benchmark layers already compute —
+it's aggregation + presentation on top of data we'll already have.
 
 ---
 
