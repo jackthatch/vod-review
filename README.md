@@ -89,6 +89,43 @@ python coach.py --name YourSummoner --tag NA1 --region na1 --count 3
 Output: markdown review per match, printed to stdout and saved to
 `./reviews/<match_id>.md`.
 
+### Evidence rules (from the jungle research study)
+
+The coach prompt is governed by findings in
+[`docs/research/jungle/`](docs/research/jungle/jungle-study.md), not by intuition.
+Seven rules are enforced in the system prompt:
+
+1. **Confounded stats are never verdicts** — CS/min, KP%, vision score and raw
+   gold diff are partly *caused by* winning. CS/min even *falls* as jungle rank
+   rises. The LLM is told never to grade the player on them.
+2. **Early game is a signal, not a verdict** — first blood ≈ 55–58% WR; don't
+   catastrophise. Mid-game decisions weigh more.
+3. **Gank/invade success rates are unmeasured in public data** — cite only the
+   fact-sheet's own numbers, and hedge the proxy fields.
+4. **Task-level, not ego-level** feedback (>⅓ of feedback interventions backfire).
+5. **Question, don't only assert** (passive verdicts don't transfer).
+6. **Specific over general** — champion depth beats pool breadth.
+7. **Reduce tilt** — framing is a performance variable.
+
+The facts the coach is told to trust vs. discount live in `STAT_RELIABILITY`
+(`coach.py`, `coach.ts`) and are injected into every fact-sheet, so the model
+cannot present a confounded metric as a verdict.
+
+### Jungle behaviour detector (`jungle_events.py`)
+
+Computes **gank participation, lane presence and invades** from the timeline —
+metrics that are *not measured anywhere in public data* (Riot doesn't track
+ganks). This is the product's differentiator.
+
+```bash
+python jungle_events.py --raw-dir data/raw --match NA1_1234567890 --summary
+```
+
+**Honesty contract:** converted ganks and invade windows are *measured*; lane
+visits are a **proxy** for gank attempts, limited by Riot's once-per-minute
+position sampling — failed ganks are not directly observable. Every proxy field
+is labelled, and the coach is instructed to hedge it. See the module docstring.
+
 ### Environment
 
 | Var | Purpose |

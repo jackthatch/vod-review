@@ -36,6 +36,7 @@ import requests
 
 import board as board_mod
 import inflection as inflection_mod
+import jungle_events as jungle_mod
 import moments as moments_mod
 from fetch_match import Riot, condense, REGION_ROUTING
 
@@ -43,6 +44,36 @@ from fetch_match import Riot, condense, REGION_ROUTING
 DEFAULT_MODEL = "anthropic/claude-sonnet-4"
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+# Which stats the coach may treat as causal evidence vs. mere symptoms.
+# Derived from docs/research/jungle/ (Axes 2, 3, 5, 6, 7). Fed to the LLM so it
+# cannot present a confounded metric as a verdict.
+STAT_RELIABILITY = {
+    "use_as_causal": [
+        "early deaths (chosen before the outcome, with a mechanism)",
+        "first-objective contests (who was committed, numbers, position)",
+        "tempo / pathing choices",
+        "gank and invade preconditions (vision, priority, duel strength)",
+    ],
+    "confounded_do_not_grade": {
+        "cs_per_min": "falls in a lost game (lost map access); in the JUNGLE it "
+                      "also FALLS with rank — over-farming is a low-elo leak",
+        "kill_participation": "rises because a winning team has more kills to join",
+        "vision_score": "ward-lifetime provided + denied, so winners score higher "
+                        "by construction; a purpose-built model beat it at "
+                        "predicting winners",
+        "gold_diff": "as much an outcome as a cause",
+    },
+    "unmeasured_in_public_data": [
+        "gank conversion rate", "invade success rate", "leaks by rank",
+    ],
+    "reference_effect_sizes": {
+        "first_blood_win_rate": "~57.6% -> 55.4% (Riot, patches 14.24 -> 25.S1.2)",
+        "first_turret_win_rate": "~70.4% -> 70.3% (Riot, same period)",
+        "first_baron_alone": "~50% (coin flip) — Baron matters via conversion",
+        "mastery_effect": "50+ games on a champion: mean +4.98pp over population",
+    },
+}
 
 
 # ---------------------------------------------------------------------------
@@ -219,6 +250,11 @@ def build_context(match, timeline, puuid, top_moments=4, top_inflections=6,
             "situation": _trim_situation(board_mod.situation_at(bd, ip["min"])),
         })
 
+    # -- jungle behaviour (ganks / lane presence / invades) -------------
+    # Computed from this timeline. Gank kills + invade windows are measured;
+    # lane visits are a proxy (Riot samples positions 1/min).
+    je = jungle_mod.detect(bd)
+
     return {
         "match_id": bd["match_id"],
         "overview": overview,
@@ -227,6 +263,14 @@ def build_context(match, timeline, puuid, top_moments=4, top_inflections=6,
         "deaths": deaths,
         "pivotal_moments": moments_out,
         "inflections": inflections_out,
+        "jungle_events": {
+            "summary": je["summary"],
+            "ganks": je["ganks"],
+            "invades": je["invades"],
+            "lane_visits": je["lane_visits"],
+            "caveat": je["caveat"],
+        },
+        "stat_reliability": STAT_RELIABILITY,
     }
 
 
@@ -259,21 +303,57 @@ missing (e.g. summoner cooldowns, exact wave state), hedge rather than assert.
 Never quote raw map coordinates or distances (no "units", no x/y) — refer to
 places by name: "mid lane", "your red buff", "at Dragon pit", "in the river".
 
+EVIDENCE RULES (from a research study of how LoL games are actually won — these
+are not optional):
+
+1. CONFOUNDED STATS ARE NEVER VERDICTS. The `stat_reliability` block lists the
+   metrics that are partly CAUSED BY winning rather than causes of it. CS/min,
+   kill participation, vision score and raw gold difference all fall in this
+   bucket — e.g. CS/min drops in a lost game because you lose map access, and in
+   the JUNGLE CS/min actually FALLS as rank rises, so over-farming is a low-elo
+   leak, not a win driver. Never write "your CS/min was low, therefore you played
+   badly", never grade the player on these, and never use them as the reason a
+   game was lost. Use them only as symptoms and say what might lie behind them.
+2. EARLY GAME IS A SIGNAL, NOT A VERDICT. First blood is worth only ~55-58% win
+   rate and first tower ~70%, and first Baron alone is a coin flip — Baron and
+   objectives matter through what you CONVERT them into. Do not frame a first
+   death, or a deficit at 15 minutes, as decisive. Weight MID-GAME decision
+   points and objective conversions higher.
+3. GANK AND INVADE "SUCCESS RATES" ARE UNMEASURED IN PUBLIC DATA — Riot does not
+   track ganks. Cite ONLY the gank/invade numbers in the fact-sheet (they are
+   computed from this timeline). The lane-visit fields are a PROXY limited by
+   Riot's once-per-minute position sampling: failed ganks are not directly
+   observable, so hedge them explicitly and never imply a failed gank is known.
+4. TASK-LEVEL, NOT EGO-LEVEL. Feedback aimed at the PERSON damages performance —
+   over a third of feedback interventions reduce it. Talk only about the PLAY.
+   Never about the player's talent, rank, or worth. Not "you're bad at
+   tracking" but "this path walked into a blind spot".
+5. QUESTION, DON'T ONLY ASSERT. Passive verdicts don't transfer to improvement.
+   For the biggest moments, name the decision point, the information available,
+   and the fork the player faced, so they can see the alternative themselves.
+6. SPECIFIC OVER GENERAL. Depth on one champion is the largest measured driver of
+   jungle win rate — bigger than pool breadth. Favour concrete, repeatable
+   actions over generic advice.
+7. REDUCE TILT. Framing changes performance. Be direct and honest, never harsh;
+   end on the single highest-leverage thing to work on.
+
 Your job is to write a concise, actionable review in Markdown with exactly these
 sections:
 
 ## Game overview
 3-5 sentences: the shape of the game, who carried/inted, and the single most
-important narrative thread. Reference the player's KDA/CS/gold and the matchup.
+important narrative thread. Reference the player's KDA and the matchup (you may
+state CS/gold as CONTEXT, never as a grade).
 
 ## Key points
-A short bullet list (4-6) of the highest-signal facts: first-clear speed,
-farming-vs-fighting split, level/gold vs. the enemy jungler, objective control,
-death timing. Each bullet states the fact AND why it mattered.
+A short bullet list (4-6) of the highest-signal facts: early decisions, the
+jungle-events summary (ganks/invades — hedged), objective control and what it was
+converted into, level/gold vs. the enemy jungler, death timing. Each bullet states
+the fact AND why it mattered. Do not include confounded stats as "key points".
 
 ## Deciding moments
 For each pivotal moment given, one short paragraph answering three questions:
-1. What happened (timestamp + event).
+1. What happened (timestamp + event) and what the player could see at that moment.
 2. Why it went the way it did (underleveled, unspent gold, out of position,
    bad fight choice, or just a 50/50 that went the wrong way).
 3. The alternative — the better play the player should have made instead.
